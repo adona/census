@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Income vs. Education</title>
+	<meta charset="UTF-8" />
+	<script src="https://d3js.org/d3.v4.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script src="lib/seedrandom.js"></script>
+	<link rel="stylesheet" href="income.css">
+</head>
+<body>
+	<div id="header"> 
+		<div id="title"> <h1> This will be the title  </h1> </div>
+		<div id="byline"> This could be the byline, with my name, affiliation, and date. </div>
+		<div id="description"> 
+			<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. |
+			<a target="_blank" href="">More info →</a></p>
+		</div>
+	</div>
+	<div id="visualization-container">
+		<div id="chart"></div>
+		<div id="occupations-list"></div>
+	</div>
+	<script>
+		var data, occupations, categories,
+			data_selected, data_mouseover,
+			edu_scale, wage_scale, draw_data;
+
+		// Read the data
+		var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/asec16_worked_lastyear_10k.csv",
+			url_occp = "https://storage.googleapis.com/iron-flash-216615-dev/occ_hierarchical.json";
+		d3.csv(url_data, function(d) { // Load the data
+			data = d; // Save to global variable (for easier debugging)
+			d3.json(url_occp, function(d) { // Load the occupations
+				occupations = d; // Save to global variable (for easier debugging)
+
+				preprocess_data();
+				data_selected = data;
+				draw_visualization();
+				window.onresize = draw_visualization;
+			});
+		});
+		
+		function preprocess_data() {
+			// 1. Filter data: Keep only people who:
+			// 	- were employed with an organization (as opposed to self-employed)
+			data = data.filter(person => +person["INCWAGE"] > 0);
+			// - TODO: I'm currently filtering out people with incomes > $200,000, when what I probably want to do 
+			// is either top-code them or handle this piece of code directly in the visualization.
+			data = data.filter(person => +person["INCWAGE"] <= 200000);
+			// 	- worked the entire year (50+ weeks)
+			data = data.filter(person => +person["WKSWORK1"] >= 50);
+			// 	- usually worked full time (35+ hours/week)
+			data = data.filter(person => +person["UHRSWORKLY"] >= 35);
+			
+			// 2. Remap the education field to lower granularity categories
+			var edu_level_new_descriptions = ["None", "Some primary/secondary", "Some highschool - no degree", 
+										"Highschool diploma", "Some college - no degree", "Associate's degree", 
+										"Bachelor's degree", "Master's degree", "Professional Degree", "Doctorate degree"];
+			var edu_level_old_codes = [["2"], ["10", "20", "30"], ["40", "50", "60", "71"], 
+												 ["73"], ["81"], ["91", "92"], 
+												 ["111"], ["123"], ["124"], ["125"]];
+			var edu_codes_map = {}
+			for(var i=0; i<edu_level_old_codes.length; i++) {
+				var new_code = i;
+				for(var j=0; j<edu_level_old_codes[i].length; j++) {
+					var old_code = edu_level_old_codes[i][j];
+					edu_codes_map[old_code] = new_code;
+				}
+			}
+			for(var i=0; i< data.length; i++) {
+				data[i]["educ_recode"] = edu_codes_map[data[i]["EDUC"]];
+				data[i]["educ_perturbation"] = 0.15*randn_bm() // This will be used later in visualization, 
+																			 // but want to compute it only once in advance for both efficiency 
+																			 // and so that the perturbations are the same between re-draws.
+			}
+
+			// 3. Reorganize the occupations data structure.
+			// Current data structure:
+			// occupations = {
+			// 	"Management" : {   						<--- Category
+			// 			"10" : "Chief executives",    	<--- Occupation
+			// 			"20" : "General and operations managers", ....
+
+			// Reorganized into two data structures: 
+			// 3.1. a categories list for easy data binding.
+			// categories = [{ 	"code": "1",
+			// 					"description": "Management",
+			// 					"occupations": [{"code": "10",
+			// 									 "description": "Chief executives"}, ...]} ...
+			// 3.2. a flat occupations dictionary (as opposed to the original hierarchical one) for easy code -> description retrieval
+			// occupations = {
+			// 	"10" : {"description": "Chief executives",
+			// 			"category_code": "1"} ...
+
+			var h_occupations = occupations; // Since I'm about to restructure occupations, copy the current data structure to a temporary variable
+																			 // where the "h_" in the name stands for hierarchical.
+			// 3.1. Reorganize categories
+			categories = [];
+			for(var cat_description in h_occupations) {
+				var cat_occupations = [];
+				for(var occp_code in h_occupations[cat_description]) {
+					cat_occupations.push({
+						"code": occp_code,
+						"description": h_occupations[cat_description][occp_code]
+					});
+				}
+				categories.push({
+					"description": cat_description,
+					"occupations": cat_occupations
+				});
+			}
+			// Sort the categories alphabetically by description
+			categories.sort(function(c1, c2) {
+				if(c1["description"]<c2["description"]) return -1;
+				else return 1;
+			});
+			// Add category codes
+			for(var i=0; i<categories.length; i++)
+				categories[i]["code"] = ""+(i+1);
+
+			// 3.2 Reorganize occupations
+			occupations = {};
+			for(var i=0; i<categories.length; i++) {
+				var category = categories[i];
+				for(var j=0; j<category["occupations"].length; j++) {
+					var occupation = category["occupations"][j];
+					occupations[occupation["code"]] = {
+						"description": occupation["description"],
+						"category_code": category["code"]
+					};
+				}
+			}
+			
+			// Annotate data with categories (for easy filtering by category)
+			for(var i=0; i<data.length; i++)
+				data[i]["occp_category"] = occupations[data[i]["OCCLY"]]["category_code"];
+		}
+		
+		function draw_visualization() {
+			update_visualization_height();
+			create_occupations_list();
+			draw_chart_background();
+			draw_data(data_selected, 'selected');
+		}
+		
+		function update_visualization_height() {
+			var window_height = $(window).height(),
+				header_height = $("#header").outerHeight(true),
+				visualization_container = $("#visualization-container"),
+				container_margin = visualization_container.outerHeight(true) - visualization_container.height(),
+				new_container_height = window_height - header_height - container_margin;
+			visualization_container.height(new_container_height);
+		}
+		
+		function create_occupations_list() {
+			var occupations_list_div = d3.select("#occupations-list");
+
+			if(occupations_list_div.selectAll("*").nodes().length == 0)  { // If >0 this is just a window resize, no need to recreate the occp list
+				// Add "All occupations"
+				occupations_list_div
+					.append("div")
+						.attr("class", "all selected")
+						.attr("code", "0")
+						.on("click", () => process_occp_list_interaction("selected", "all", "0"))
+						.on("mouseover", () => process_occp_list_interaction("mouseover", "all", "0"))
+						.on("mouseout", () => process_occp_list_interaction("mouseout"))
+					.append("div")
+						.attr("class", "category-label")
+						.text("All Occupations");
+
+				// Add categories
+				var category_divs = occupations_list_div
+					.append("div")
+						.attr("id", "categories")
+					.selectAll("category")
+						.data(categories, category => category["code"]);
+				category_divs = category_divs.enter()
+					.append("div")
+						.attr("class", "category")
+						.attr("code", d => d["code"])
+					.append("div")
+						.attr("class", "category-label")
+						.text(category => category["description"])
+						.on("click", d => process_occp_list_interaction("selected", "category", d["code"]))
+						.on("mouseover", d => process_occp_list_interaction("mouseover", "category", d["code"]))
+						.on("mouseout", d => process_occp_list_interaction("mouseout"))
+
+			}
+			
+			// Ugly hack to adjust the height of a child div when the parent div only has max-height;
+			d3.select("#categories")
+				.attr("style", "")
+				.attr("style", "height: calc(" + $("#occupations-list").innerHeight() + "px - 1.5rem)");
+		}
+
+		function draw_chart_background() {
+			var chart_div = d3.select("#chart");
+			
+			// If this is a re-draw (e.g. window resize), first remove the existing chart
+			chart_div.select("svg").remove();	
+
+			// Create a new SVG canvas
+			var width = chart_div.node().offsetWidth,
+				height = chart_div.node().offsetHeight;
+			var svg = chart_div.append("svg")
+				.attr("width", width)
+				.attr("height", height);
+			
+			// Create the axis
+			// Manually space the ticks on the edu axis
+			var edu_ticks = [1, 2, 3, 4, 6, 7, 8, 10, 11, 12];
+			// .. and provide labels only for the most important ticks
+			var edu_labels = ["None", "", "", "Highschool Diploma", "", "", "Batchelor's Degree", "", "", "Doctorate Degree"];
+
+			var max_wage = 200000;
+			var edu_extent = [0.5, 12.5],
+					wage_extent = [0, max_wage];
+			
+			var margin = 50;
+			edu_scale = d3.scaleLinear()
+				.domain(edu_extent)
+          		.range([margin+20, width-margin]);
+      		wage_scale = d3.scaleLinear()
+				.domain(wage_extent)
+          		.range([height-margin-10, margin]);
+
+			var edu_axis = d3.axisBottom()
+				.scale(edu_scale)
+				.tickValues(edu_ticks)
+				.tickFormat((d,i) => edu_labels[i]);
+			var wage_axis = d3.axisLeft()
+				.scale(wage_scale)
+				.ticks(5, ",s");
+
+			svg.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(0," + (height-margin) + ")")
+				.call(edu_axis);
+			svg.append("g")
+				.attr("class", "y axis")
+				.attr("transform", "translate(" + margin + ",0)")
+				.call(wage_axis);
+      
+			// After the axis get rendered, further customize the x axis ticks and labels:
+			// Make labeled ticks longer
+			d3.selectAll("g.x.axis g.tick line")
+				.attr("y2", (x, i) => edu_labels[i] != "" ? 15 : 6);
+			// Move labels lower to match the longer ticks
+			d3.selectAll("g.x.axis g.tick text")
+				.attr("y", 18);
+			
+      		// Prepare the data for visualization:
+			// Pre-compute perturbed positions on the x-axis for each datapoint so they're easier to see
+			for (var i in data) {
+				var person = data[i]
+				person["x_position"] = edu_ticks[person["educ_recode"]] + person["educ_perturbation"];
+			}				
+		}
+		
+		function draw_data(data_to_draw, data_state) { 
+			// data_state in: {selected, mouseover}
+			var circles = d3.select("svg")
+				.selectAll(".data-"+data_state)
+				.data(data_to_draw, person=>person["CPSIDP"]);
+			
+			circles.enter()
+				.append('circle')
+					.attr('class', "data-"+data_state)
+					.attr('cx', person => edu_scale(person["x_position"]))
+					.attr('cy', person => wage_scale(+person["INCWAGE"]))
+					.attr('r', 2)
+					.on("mouseover", circleMouseOver)
+					.on("mouseout", circleMouseOut)
+					.style("opacity", 0)
+					.transition()
+						.style("opacity", 1)
+						.duration(300);
+
+			circles.exit()
+				.transition()
+					.style("opacity", 0)
+					.duration(300)
+					.remove();
+						
+			function circleMouseOver(d) {  // Add occupation label
+				var occp_description = occupations[d["OCCLY"]]["description"];
+				d3.select("svg")
+					.append("text")
+					.attr("id", "t" + d["CPSIDP"])
+					.attr("class", "occp_label")
+					.attr("x", edu_scale(d["x_position"]) + 10)
+					.attr("y", wage_scale(d["INCWAGE"]) - 3)
+					.text("$" + d3.format(",.2s")(d["INCWAGE"]) + " - " + occp_description);
+			}
+
+			function circleMouseOut(d) {	// Remove occupation label
+				// Select text by id and remove
+				d3.select("#t" + d["CPSIDP"]).remove();
+			}
+		}
+		
+		function process_occp_list_interaction(interaction, level, code) {
+			switch(interaction) {
+				case "selected":
+					// 1. Update the occupation list
+					d3.selectAll("#occupations-list .selected").classed("selected", false); // Clear current selection
+					d3.select("#occupations-list ." + level + "[code='" + code + "']")
+						.classed("selected", true) // Set new selection
+						.classed("mouseover", false); // Remove mouseover from newly selected element
+					// 2. Update the data
+					// Remove previously selected data (currently faded in the background)
+					draw_data([], "faded");
+					// Change current mouseover data to selected
+					d3.selectAll(".data-mouseover")
+						.classed("data-mouseover", false)
+						.classed("data-selected", true);
+					data_selected = data_mouseover;
+					data_mouseover = [];
+					break;
+
+				case "mouseover":
+					// 1. Update the occupation list
+					var mouseover_div = d3.select("#occupations-list ." + level + "[code='" + code + "']");
+					if(mouseover_div.classed("selected") == true) return; // Ignore mouseovers over selected elements
+					mouseover_div.classed("mouseover", true); // Otherwise, set new mouseover
+					// 2. Update the data
+					// Fade currently selected data into the background
+					d3.selectAll(".data-selected")
+						.classed("data-selected", false)
+						.classed("data-faded", true);
+					// Draw the new mouseover data
+					data_mouseover = filter_data(level, code);
+					draw_data(data_mouseover, "mouseover");
+					break;
+
+				case "mouseout":
+					// 1. Update the occupation list
+					d3.selectAll("#occupations-list .mouseover").classed("mouseover", false); // Remove mouseover
+					// 2. Update the data
+					// Remove the mouseover data
+					draw_data([], "mouseover");
+					data_mouseover = [];
+					// Bring selected data back from the background
+					d3.selectAll(".data-faded")
+						.classed("data-selected", true)
+						.classed("data-faded", false);
+					break;
+			}
+		}
+
+		function filter_data(level, code) {
+			var filtered_data;
+			switch (level) {
+				case "all":
+					filtered_data = data; 
+					break;
+				case "category":
+					filtered_data = data.filter(p => p["occp_category"] == code); 
+					break;
+				case "occupation":
+					filtered_data = data.filter(p => p["OCCLY"] == code); 
+					break;
+			}
+			return filtered_data;
+		}
+	</script>
+	<script>
+		// Standard Normal variate using Box-Muller transform.
+		Math.seedrandom("I like consistent results!");
+		function randn_bm() {
+			var u = 0, v = 0;
+			while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+			while(v === 0) v = Math.random();
+			return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+		}
+	</script>
+</body>
+</html>

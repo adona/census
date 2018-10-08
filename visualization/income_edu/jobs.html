@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ACS</title>
+  
+	<style>
+		.axis path {
+      fill: none;
+      stroke: #AAA;
+      stroke-width: 1px;
+    }
+
+		.tick line {
+			fill: none;
+			stroke: #AAA;
+    }
+		
+		.tick text {
+      font-size: 0.9em;
+    }
+
+		circle {
+			fill: mediumpurple;
+			opacity: 0.8;
+			stroke: #666;
+			stroke-width: 1px;
+    }
+		
+		.occp_label {
+			font-size: 0.8em;
+		}
+	</style>
+	
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+
+	<script>
+		var data_dictionary, data;
+    function draw(d) {
+			// Save to global variable for debugging
+			data = d
+			// Add unique IDs to the records
+			for(var i=0; i<data.length; i++)
+				data[i]["ID"] = i;
+			
+			// Create the title
+      var body = d3.select("body");
+      body.append("h2").text("Jobs by median income and education level");
+      
+      // Create the svg canvas
+      var width = 1300, height = 600,
+					margin_left = 75, margin_right = 400, margin_top = 75, margin_bottom = 75;
+      var svg = body.append("svg")
+        .attr('width', width).attr('height', height)
+        .attr('class','chart');
+
+      // Create the axis
+			// Manually space the ticks on the edu axis
+			var edu_ticks = [1.5, 2.5, 3.5, 5, 6, 7, 8, 9];
+			var edu_labels = Object.values(data_dictionary["SCHL_recode_1"]).slice(1);
+
+      var edu_extent = d3.extent(edu_ticks);
+      var wage_extent = [10000, 200000]
+			
+      var edu_scale = d3.scaleLinear()
+					.domain(edu_extent)
+          .range([margin_left+10, width-margin_right]);
+      var wage_scale = d3.scaleLog()
+					.domain(wage_extent)
+          .range([height-margin_bottom-10, margin_top]);
+						
+      var edu_axis = d3.axisBottom()
+          .scale(edu_scale)
+ 					.tickValues(edu_ticks)
+					.tickFormat((d,i) => edu_labels[i])
+      var wage_axis = d3.axisLeft()
+          .scale(wage_scale)
+					.ticks(5, ",.2s");
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + (height-margin_bottom) + ")")
+          .call(edu_axis);
+      svg.append("g")
+          .attr("class", "y axis")
+          .attr("transform", "translate(" + margin_left + ",0)")
+          .call(wage_axis);
+      			
+			// Create the circles representing different occupations
+			// For each occupation, calculate median education level and income
+			by_occp = d3.nest()
+				.key(person => person["OCCP"])
+				.rollup(function(persons_with_occp){
+						var occp = persons_with_occp[0]["OCCP"];
+						var occp_description = data_dictionary["OCCP"][occp]
+						var n_persons = persons_with_occp.length;
+						var median_income = Math.floor(d3.median(persons_with_occp.map(p => p["PINCP"])));
+						var median_edu = Math.floor(d3.median(persons_with_occp.map(p => p["SCHL_recode_1"])));
+						var median_edu_description = data_dictionary["SCHL_recode_1"][median_edu.toString()];
+						var	median_edu_x_position = edu_ticks[median_edu-1];
+						var x0 = edu_scale(median_edu_x_position);
+						var y0 = wage_scale(median_income);
+						var r = Math.ceil(Math.sqrt(n_persons)) / 1.1;
+				
+						return {
+							"OCCP": occp,
+							"OCCP_description": occp_description,
+							"n_persons": n_persons,
+							"median_income": median_income,
+							"median_edu": median_edu,
+							"median_edu_description": median_edu_description,
+							"median_edu_x_position": median_edu_x_position,
+							"x0": x0,
+							"y0": y0,
+							"r": r,
+							"x": x0,
+							"y": y0
+						}
+					})
+				.entries(data)
+			// Flatten into table (easier to inspect in the console)
+			by_occp_flattened = [];
+			for(var i=0; i<by_occp.length; i++)
+				by_occp_flattened.push(by_occp[i]["value"]);
+			by_occp = by_occp_flattened;
+			by_occp = by_occp.sort((x, y) => y["n_persons"] - x["n_persons"]);
+			
+			// Filter out occupations that have <10 datapoints
+			by_occp = by_occp.filter(occp => occp["n_persons"] >=10);
+			
+			// Add circles — at this point they will overlap
+			var circles = d3.select("svg")
+				.selectAll("circle")
+				.data(by_occp, occp=>occp["OCCP"]);
+			circles.enter()
+				.append('circle')
+				.attr('cx', occp => occp["x0"])
+				.attr('cy', occp => occp["y0"])
+				.attr('r', occp => occp["r"])
+				.on("mouseover", circleMouseOver)
+				.on("mouseout", circleMouseOut)
+			
+			// Use a force layout to iteratively lay out the circles so they don't overlap
+			// (see: https://github.com/d3/d3-force)
+			var niter = 50
+			var simulation = d3.forceSimulation(by_occp)
+				.force("x", d3.forceX(occp => occp["x0"]).strength(0.01))
+				.force("y", d3.forceY(occp => occp["y0"]).strength(0.5)) // y-axis attraction >> x-axis
+				.force("collide", d3.forceCollide().radius(occp => occp["r"] + 0.5))
+				.velocityDecay(0.5)
+				.alphaDecay(1-Math.pow(0.001,1/niter))	// Set #iterations (see documentation)
+				.on("tick", update);
+
+			// Update function to redraw the the circles whenever 
+			// the simulation has calculated new (x,y) coordinates
+			var n_iter = 0;
+			function update() {
+				var circles = d3.select("svg")
+					.selectAll("circle")
+					.data(by_occp, occp=>occp["OCCP"]);
+				circles
+						.attr('cx', occp => occp["x"])
+						.attr('cy', occp => occp["y"])
+				n_iter++;
+				console.log("Iteration #" + n_iter);
+			}
+			
+			// Add mouse-over events for showing occupation label
+			function circleMouseOver(occp, i) {  // Add label
+				svg.append("text")
+					.attr("id", "t" + occp["OCCP"])
+					.attr("class", "occp_label")
+					.attr("x", occp["x"] + 10)
+					.attr("y", occp["y"] - 3)
+					.text("$" + d3.format(",.2s")(occp["median_income"]) + " - " + occp["OCCP_description"].slice(4));
+			}
+			
+			function circleMouseOut(occp, i) {	// Remove label
+				// Select text by id and remove
+				d3.select("#t" + occp["OCCP"]).remove();
+			}
+    }
+  </script>
+</head>
+<body>
+  <script>
+		// Load the data dictionary
+		var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/acs16_employed_10k.csv",
+			url_dict = "https://storage.googleapis.com/iron-flash-216615-dev/acs16_data_dictionary_extended.json";
+		d3.json(url_dict, function(data_dict) {
+			// Save to global variable
+			data_dictionary = data_dict	
+			// Load the actual data
+			d3.csv(url_data, draw);
+		});
+  </script>
+</body>
+</html>

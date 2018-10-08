@@ -1,0 +1,145 @@
+* {
+	box-sizing: border-box;	
+/* 	border: 1px solid #f9f9f9; */
+
+	/* 	CSS variables */
+	--occp-list-width: 200px;
+	--selected-color: #5cbfbf;
+	--mouseover-color: #bf755c;
+	--faded-color: hsl(180, 40%, 80%);
+}
+
+body {
+	margin: 0px 5%;
+	font-family: Helvetica;	
+}
+
+/* ------------  Header ------------  */
+#header {
+	margin-top: 30px;	
+	width: calc(100% - var(--occp-list-width));
+/* 	width: 100%; */
+}
+
+#title h1 {
+	margin: 0px auto 12px;
+	text-align: center;
+	font-family: Georgia;
+	font-size: 2.625rem;
+}
+
+#byline {
+	margin: 0px auto 25px;
+	max-width: 40em;
+	text-align: center;
+	font-size: 0.8125rem;
+	font-style: italic;
+}
+
+#description p {
+	margin: 0 auto 10px;
+	max-width: 45em;
+	line-height: 20px;
+	font-size: 0.875rem;
+}
+
+#description a {
+	color: #217ce3;
+	text-decoration: none;
+}
+
+
+/* ------------ Visualization  ------------ */
+
+#visualization-container {
+	position: relative;
+	margin: 10px 0px 40px;
+}
+
+/* Occupations list */
+#occupations-list {
+	display: inline-block;
+	width: var(--occp-list-width);
+	max-height: calc(100% - 100px);
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	overflow: hidden;
+}
+
+#categories {
+	overflow: hidden;	
+}
+
+#categories:hover {
+	overflow-y: auto;
+}
+
+.category-label {
+	padding: 0.3rem 0 0.3rem 1rem;
+	max-width: calc(var(--occp-list-width) - 1rem);
+	font-size: 0.6875rem;
+	font-weight: 500;
+	overflow: hidden;
+	cursor: pointer;
+}
+
+.all .category-label {
+	font-size: 0.875rem;
+	font-weight: 600;
+}
+
+.selected {
+	background-color: var(--selected-color);
+	transition: background-color 0.3s ease-out;
+}
+
+.mouseover {
+	background-color: var(--mouseover-color);
+	transition: background-color 0.3s ease-out;	
+}
+
+/* Chart  */
+
+#chart {
+	display: inline-block;
+	width: calc(100% - var(--occp-list-width) - 5px);
+/* 	width: calc(100% - 2*var(--occp-list-width) - 5px); */
+/* 	margin-left: var(--occp-list-width); */
+	height: 100%;
+}
+
+.axis path {
+	fill: none;
+	stroke: #8b969a;
+	stroke-width: 1px;
+}
+
+.tick line {
+	fill: none;
+	stroke: #8b969a;
+}
+
+.tick text {
+	font-size: 0.6875rem;
+/* 	fill: #9aa3a7; */
+}
+
+.data-selected {
+	fill: var(--selected-color);
+	transition: fill .3s ease-in;	
+}
+
+.data-mouseover {
+	fill: var(--mouseover-color);
+	transition: fill .3s ease-in;	
+}
+
+.data-faded {
+	fill: var(--faded-color);
+	transition: fill .3s ease-in;	
+}
+
+.occp_label {
+	font-size: 0.8rem;
+}
