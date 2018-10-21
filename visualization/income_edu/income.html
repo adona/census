@@ -320,6 +320,14 @@
 				.attr("style", "width: 40px; text-align: right; transform: translate(1px,15px);");			
 
 
+			// Create the infobox
+			var infobox = d3.select("#chart")
+				.append("div")
+				.attr("id", "infobox");
+			infobox.append("span")
+				.text("Occupation")
+				.attr("class", "static-text");
+
       		// Prepare the data for visualization:
 			// Pre-compute perturbed positions on the x-axis for each datapoint so they're easier to see
 			for (var i in data) {
@@ -360,20 +368,17 @@
 				// Make the current cirle slightly larger
 				d3.select(this).attr("r", 4);
 
-				// Add occupation label
+				// Populate the infobox
 				var occp_description = occupations[d["OCCLY"]]["description"];
-				d3.select("svg")
-					.append("text")
-					.attr("id", "t" + d["CPSIDP"])
-					.attr("class", "occp_label")
-					.attr("x", edu_scale(d["x_position"]) + 10)
-					.attr("y", wage_scale(d["INCWAGE"]) - 3)
-					.text("$" + d3.format(",.2s")(d["INCWAGE"]) + " - " + occp_description);
+				infobox = d3.select("#infobox");
+				infobox.append("span")
+					.attr("class", "dynamic-text")
+					.text(occp_description)
 			}
 
 			function circleMouseOut(d) {	
-				// Remove occupation label
-				d3.select("#t" + d["CPSIDP"]).remove();
+				// Clear the infobox
+				d3.select(".dynamic-text").remove();
 
 				// Return circle radius to normal
 				d3.select(this).attr("r", 2.25);
