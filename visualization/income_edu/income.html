@@ -5,7 +5,6 @@
 	<meta charset="UTF-8" />
 	<script src="https://d3js.org/d3.v4.min.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-	<script src="lib/seedrandom.js"></script>
 	<link rel="stylesheet" href="income.css">
 </head>
 <body>
@@ -68,9 +67,9 @@
 			}
 			for(var i=0; i< data.length; i++) {
 				data[i]["educ_recode"] = edu_codes_map[data[i]["EDUC"]];
-				data[i]["educ_perturbation"] = 0.15*randn_bm() // This will be used later in visualization, 
-																			 // but want to compute it only once in advance for both efficiency 
-																			 // and so that the perturbations are the same between re-draws.
+				data[i]["educ_perturbation"] = 0.15*randn_bm()  // This will be used later in visualization, 
+																// but want to compute it only once in advance for both efficiency 
+																// and so that the perturbations are the same between re-draws.
 			}
 
 			// 3. Reorganize the occupations data structure.
@@ -381,7 +380,6 @@
 	</script>
 	<script>
 		// Standard Normal variate using Box-Muller transform.
-		Math.seedrandom("I like consistent results!");
 		function randn_bm() {
 			var u = 0, v = 0;
 			while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
