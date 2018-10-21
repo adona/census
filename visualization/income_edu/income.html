@@ -210,7 +210,7 @@
 			var chart_div = d3.select("#chart");
 			
 			// If this is a re-draw (e.g. window resize), first remove the existing chart
-			chart_div.select("svg").remove();	
+			chart_div.selectAll("*").remove();	
 
 			// Create a new SVG canvas
 			var width = chart_div.node().offsetWidth,
