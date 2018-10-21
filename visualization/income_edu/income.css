@@ -18,7 +18,6 @@ body {
 #header {
 	margin-top: 30px;	
 	width: calc(100% - var(--occp-list-width));
-/* 	width: 100%; */
 }
 
 #title h1 {
@@ -75,6 +74,18 @@ body {
 	overflow-y: auto;
 }
 
+.category {
+	transition: background-color 0.3s ease-out;
+}
+
+.category[state=selected] {
+	background-color: var(--selected-color);
+}
+
+.category[state=mouseover] {
+	background-color: var(--mouseover-color);	
+}
+
 .category-label {
 	padding: 0.3rem 0 0.3rem 1rem;
 	max-width: calc(var(--occp-list-width) - 1rem);
@@ -89,23 +100,12 @@ body {
 	font-weight: 600;
 }
 
-.selected {
-	background-color: var(--selected-color);
-	transition: background-color 0.3s ease-out;
-}
-
-.mouseover {
-	background-color: var(--mouseover-color);
-	transition: background-color 0.3s ease-out;	
-}
-
 /* Chart  */
 
 #chart {
+	position: relative;
 	display: inline-block;
 	width: calc(100% - var(--occp-list-width) - 5px);
-/* 	width: calc(100% - 2*var(--occp-list-width) - 5px); */
-/* 	margin-left: var(--occp-list-width); */
 	height: 100%;
 }
 
@@ -122,22 +122,24 @@ body {
 
 .tick text {
 	font-size: 0.6875rem;
-/* 	fill: #9aa3a7; */
 }
 
-.data-selected {
+circle {
+	stroke: rgba(0,0,0,0);
+	stroke-width: 7px;
+	transition: fill .3s ease-out;
+}
+
+circle[state=selected] {
 	fill: var(--selected-color);
-	transition: fill .3s ease-in;	
 }
 
-.data-mouseover {
+circle[state=mouseover] {
 	fill: var(--mouseover-color);
-	transition: fill .3s ease-in;	
 }
 
-.data-faded {
+circle[state=faded] {
 	fill: var(--faded-color);
-	transition: fill .3s ease-in;	
 }
 
 .occp_label {

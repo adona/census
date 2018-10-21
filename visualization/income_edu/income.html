@@ -23,7 +23,7 @@
 	</div>
 	<script>
 		var data, occupations, categories,
-			data_selected, data_mouseover,
+			data_subsample, data_selected, data_mouseover,
 			edu_scale, wage_scale, draw_data;
 
 		// Read the data
@@ -35,9 +35,7 @@
 				occupations = d; // Save to global variable (for easier debugging)
 
 				preprocess_data();
-				data_selected = data;
-				draw_visualization();
-				window.onresize = draw_visualization;
+				initialize_visualization();
 			});
 		});
 		
@@ -135,16 +133,28 @@
 			// Annotate data with categories (for easy filtering by category)
 			for(var i=0; i<data.length; i++)
 				data[i]["occp_category"] = occupations[data[i]["OCCLY"]]["category_code"];
+
+			// Create subsample of data to speed up visualization of "All Occupations"
+			data_subsample = data.filter(p => Math.random() < 0.3);
 		}
 		
-		function draw_visualization() {
-			update_visualization_height();
+		function initialize_visualization() {
+			set_visualization_height();
 			create_occupations_list();
+			draw_chart_background();
+			data_selected = data_subsample;
+			draw_data(data_selected, "selected");
+			window.onresize = resize_visualization;
+		}
+
+		function resize_visualization() {
+			set_visualization_height();
+			set_occupation_list_height();
 			draw_chart_background();
 			draw_data(data_selected, 'selected');
 		}
 		
-		function update_visualization_height() {
+		function set_visualization_height() {
 			var window_height = $(window).height(),
 				header_height = $("#header").outerHeight(true),
 				visualization_container = $("#visualization-container"),
@@ -156,41 +166,43 @@
 		function create_occupations_list() {
 			var occupations_list_div = d3.select("#occupations-list");
 
-			if(occupations_list_div.selectAll("*").nodes().length == 0)  { // If >0 this is just a window resize, no need to recreate the occp list
-				// Add "All occupations"
-				occupations_list_div
-					.append("div")
-						.attr("class", "all selected")
-						.attr("code", "0")
-						.on("click", () => process_occp_list_interaction("selected", "all", "0"))
-						.on("mouseover", () => process_occp_list_interaction("mouseover", "all", "0"))
-						.on("mouseout", () => process_occp_list_interaction("mouseout"))
-					.append("div")
-						.attr("class", "category-label")
-						.text("All Occupations");
+			// Add "All occupations"
+			occupations_list_div
+				.append("div")
+					.attr("class", "category all")
+					.attr("code", "0")
+					.attr("state", "selected")
+				.append("div")
+					.attr("class", "category-label")
+					.text("All Occupations")
+					.on("click", () => process_occp_list_interaction("selected", "all", "0"))
+					.on("mouseover", () => process_occp_list_interaction("mouseover", "all", "0"))
+					.on("mouseout", () => process_occp_list_interaction("mouseout"));
 
-				// Add categories
-				var category_divs = occupations_list_div
-					.append("div")
-						.attr("id", "categories")
-					.selectAll("category")
-						.data(categories, category => category["code"]);
-				category_divs = category_divs.enter()
-					.append("div")
-						.attr("class", "category")
-						.attr("code", d => d["code"])
-					.append("div")
-						.attr("class", "category-label")
-						.text(category => category["description"])
-						.on("click", d => process_occp_list_interaction("selected", "category", d["code"]))
-						.on("mouseover", d => process_occp_list_interaction("mouseover", "category", d["code"]))
-						.on("mouseout", d => process_occp_list_interaction("mouseout"))
-
-			}
+			// Add categories
+			var category_divs = occupations_list_div
+				.append("div")
+					.attr("id", "categories")
+				.selectAll("category")
+					.data(categories, category => category["code"]);
+			category_divs = category_divs.enter()
+				.append("div")
+					.attr("class", "category")
+					.attr("code", d => d["code"])
+					.attr("state", "")
+				.append("div")
+					.attr("class", "category-label")
+					.text(category => category["description"])
+					.on("click", d => process_occp_list_interaction("selected", "category", d["code"]))
+					.on("mouseover", d => process_occp_list_interaction("mouseover", "category", d["code"]))
+					.on("mouseout", d => process_occp_list_interaction("mouseout"));
 			
-			// Ugly hack to adjust the height of a child div when the parent div only has max-height;
+			set_occupation_list_height();
+		}
+
+		function set_occupation_list_height() {
+			// Manually set the #categories height relative to its parent container so that scroll works correctly
 			d3.select("#categories")
-				.attr("style", "")
 				.attr("style", "height: calc(" + $("#occupations-list").innerHeight() + "px - 1.5rem)");
 		}
 
@@ -212,10 +224,11 @@
 			var edu_ticks = [1, 2, 3, 4, 6, 7, 8, 10, 11, 12];
 			// .. and provide labels only for the most important ticks
 			var edu_labels = ["None", "", "", "Highschool Diploma", "", "", "Batchelor's Degree", "", "", "Doctorate Degree"];
+			var major_tick = [true, false, false, true, false, false, true, false, false, true];
 
 			var max_wage = 200000;
 			var edu_extent = [0.5, 12.5],
-					wage_extent = [0, max_wage];
+				wage_extent = [0, max_wage];
 			
 			var margin = 50;
 			edu_scale = d3.scaleLinear()
@@ -245,11 +258,11 @@
 			// After the axis get rendered, further customize the x axis ticks and labels:
 			// Make labeled ticks longer
 			d3.selectAll("g.x.axis g.tick line")
-				.attr("y2", (x, i) => edu_labels[i] != "" ? 15 : 6);
+				.attr("y2", (x, i) => major_tick[i] ? 15 : 6);
 			// Move labels lower to match the longer ticks
 			d3.selectAll("g.x.axis g.tick text")
-				.attr("y", 18);
-			
+				.attr("y", (x, i) => major_tick[i] ? 20 : 11)
+
       		// Prepare the data for visualization:
 			// Pre-compute perturbed positions on the x-axis for each datapoint so they're easier to see
 			for (var i in data) {
@@ -261,29 +274,36 @@
 		function draw_data(data_to_draw, data_state) { 
 			// data_state in: {selected, mouseover}
 			var circles = d3.select("svg")
-				.selectAll(".data-"+data_state)
+				.selectAll("[state="+data_state+"]:not([out])")
 				.data(data_to_draw, person=>person["CPSIDP"]);
 			
 			circles.enter()
 				.append('circle')
-					.attr('class', "data-"+data_state)
+					.attr('state', data_state)
 					.attr('cx', person => edu_scale(person["x_position"]))
 					.attr('cy', person => wage_scale(+person["INCWAGE"]))
-					.attr('r', 2)
+					.attr('r', 2.25)
 					.on("mouseover", circleMouseOver)
 					.on("mouseout", circleMouseOut)
 					.style("opacity", 0)
 					.transition()
 						.style("opacity", 1)
+						.ease(d3.easeCubicOut)
 						.duration(300);
 
 			circles.exit()
+				.attr("out", "true")
 				.transition()
 					.style("opacity", 0)
+					.ease(d3.easeCubicIn)
 					.duration(300)
 					.remove();
 						
-			function circleMouseOver(d) {  // Add occupation label
+			function circleMouseOver(d) { 
+				// Make the current cirle slightly larger
+				d3.select(this).attr("r", 4);
+
+				// Add occupation label
 				var occp_description = occupations[d["OCCLY"]]["description"];
 				d3.select("svg")
 					.append("text")
@@ -294,9 +314,12 @@
 					.text("$" + d3.format(",.2s")(d["INCWAGE"]) + " - " + occp_description);
 			}
 
-			function circleMouseOut(d) {	// Remove occupation label
-				// Select text by id and remove
+			function circleMouseOut(d) {	
+				// Remove occupation label
 				d3.select("#t" + d["CPSIDP"]).remove();
+
+				// Return circle radius to normal
+				d3.select(this).attr("r", 2.25);
 			}
 		}
 		
@@ -304,17 +327,13 @@
 			switch(interaction) {
 				case "selected":
 					// 1. Update the occupation list
-					d3.selectAll("#occupations-list .selected").classed("selected", false); // Clear current selection
-					d3.select("#occupations-list ." + level + "[code='" + code + "']")
-						.classed("selected", true) // Set new selection
-						.classed("mouseover", false); // Remove mouseover from newly selected element
+					d3.select("#occupations-list [state=selected]").attr("state", ""); // Clear previous selection 
+					d3.select("#occupations-list [state=mouseover]").attr("state", "selected"); // Change current mouseover to selection
+
 					// 2. Update the data
-					// Remove previously selected data (currently faded in the background)
-					draw_data([], "faded");
-					// Change current mouseover data to selected
-					d3.selectAll(".data-mouseover")
-						.classed("data-mouseover", false)
-						.classed("data-selected", true);
+					draw_data([], "faded"); // Remove previous selection (currently faded in the background)
+					d3.selectAll("circle[state=mouseover]").attr("state", "selected"); // Change current mouseover to selection
+
 					data_selected = data_mouseover;
 					data_mouseover = [];
 					break;
@@ -322,29 +341,24 @@
 				case "mouseover":
 					// 1. Update the occupation list
 					var mouseover_div = d3.select("#occupations-list ." + level + "[code='" + code + "']");
-					if(mouseover_div.classed("selected") == true) return; // Ignore mouseovers over selected elements
-					mouseover_div.classed("mouseover", true); // Otherwise, set new mouseover
+					if(mouseover_div.attr("state") == "selected") return; // If element is already selected, ignore mouseover
+					mouseover_div.attr("state", "mouseover"); // Else, set new mouseover
+
 					// 2. Update the data
-					// Fade currently selected data into the background
-					d3.selectAll(".data-selected")
-						.classed("data-selected", false)
-						.classed("data-faded", true);
-					// Draw the new mouseover data
+					d3.selectAll("circle[state=selected]").attr("state", "faded"); // Fade currently selected data into the background
 					data_mouseover = filter_data(level, code);
-					draw_data(data_mouseover, "mouseover");
+					draw_data(data_mouseover, "mouseover"); // Add new mouseover
 					break;
 
 				case "mouseout":
 					// 1. Update the occupation list
-					d3.selectAll("#occupations-list .mouseover").classed("mouseover", false); // Remove mouseover
+					d3.select("#occupations-list [state=mouseover]").attr("state", ""); // Clear current mouseover
+
 					// 2. Update the data
-					// Remove the mouseover data
-					draw_data([], "mouseover");
+					draw_data([], "mouseover"); // Remove current mouseover
+					d3.selectAll("circle[state=faded]").attr("state", "selected");  // Bring selected data back from the background
+
 					data_mouseover = [];
-					// Bring selected data back from the background
-					d3.selectAll(".data-faded")
-						.classed("data-selected", true)
-						.classed("data-faded", false);
 					break;
 			}
 		}
@@ -353,7 +367,7 @@
 			var filtered_data;
 			switch (level) {
 				case "all":
-					filtered_data = data; 
+					filtered_data = data_subsample; 
 					break;
 				case "category":
 					filtered_data = data.filter(p => p["occp_category"] == code); 
