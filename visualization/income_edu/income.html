@@ -269,17 +269,45 @@
 				.text(x => x);
 			
 			// Adjust their width based on the distance between ticks
-			var min_label_width = 50,
+			var min_label_width = 55,
 				tick_distance = 0.9*(edu_scale(2)-edu_scale(1)),
-				label_width = Math.max(min_label_width, tick_distance);
-			x_labels.attr("style", function(x, i) {
-				var label_style = "width: " + label_width + "px; ";
-				// And translate them into position
-				var x_pos = edu_scale(edu_ticks[i]) - label_width/2,
-					y_pos = height - margin + 15;
-				label_style += "transform: translate(" + x_pos + "px," + y_pos + "px);";
-				return 	label_style;
-			});
+				label_width;
+
+			if (tick_distance >= min_label_width) { 
+				// If window is large enough, show the labels horizontally, of width tick_distance
+				label_width = tick_distance;
+				x_labels.attr("style", function(x, i) {
+					var label_style = "width: " + label_width + "px; ";
+					// And translate them to be centered on the tickmarks. 
+					var x_pos = edu_scale(edu_ticks[i]) - label_width/2,
+						y_pos = height - margin + 15;
+					label_style += "transform: translate(" + x_pos + "px," + y_pos + "px);";
+					return 	label_style;
+				});
+			} else {
+				// If the window is too small for the ticks to be horizontal, make them diagonal
+				// Of width min_label_width
+				label_width = min_label_width;
+				x_labels.attr("style", function(x, i) {
+					var label_style = "width: " + label_width + "px; ";
+					
+					// Text aligned right
+					label_style += "text-align: right; "
+					
+					// Translated so that the top-left corner is aligned with the tickmarks
+					var x_pos = edu_scale(edu_ticks[i]) - label_width - 5,
+						y_pos = height - margin + 13;
+					label_style += "transform: translate(" + x_pos + "px," + y_pos + "px) ";
+
+					// And rotated 45 degrees
+					label_style += "rotate(-60deg); transform-origin: right top;";
+
+					return 	label_style;
+				});
+
+
+			}
+
 
       		// Prepare the data for visualization:
 			// Pre-compute perturbed positions on the x-axis for each datapoint so they're easier to see
