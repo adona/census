@@ -202,7 +202,12 @@
 		function set_occupation_list_height() {
 			// Manually set the #categories height relative to its parent container so that scroll works correctly
 			d3.select("#categories")
-				.attr("style", "height: calc(" + $("#occupations-list").innerHeight() + "px - 1.5rem)");
+				.attr("style", "height: calc(" + $("#visualization-container").innerHeight() + "px - 100px - 1.5rem)");
+			
+			// NOTE: The version below would be cleaner, but for some reason I don't fully understand 
+			// having to do with when reflow calculations happen, the #occupations-list height is not 
+			// yet updated at this point, so this doesn't work correctly.
+			// .attr("style", "height: calc(" + $("#occupations-list").innerHeight() + "px - 1.5rem)");
 		}
 
 		function draw_chart_background() {
