@@ -175,7 +175,7 @@
 					.attr("state", "selected")
 				.append("div")
 					.attr("class", "category-label")
-					.text("All Occupations")
+					.text("All Industries")
 					.on("click", () => process_occp_list_interaction("selected", "all", "0"))
 					.on("mouseover", () => process_occp_list_interaction("mouseover", "all", "0"))
 					.on("mouseout", () => process_occp_list_interaction("mouseout"));
@@ -371,6 +371,9 @@
 				// Populate the infobox
 				var occp_description = occupations[d["OCCLY"]]["description"];
 				infobox = d3.select("#infobox");
+				// First make sure the old occupation was removed correctly
+				infobox.select(".dynamic-text").remove();
+				// Then add the new one.
 				infobox.append("span")
 					.attr("class", "dynamic-text")
 					.text(occp_description)
