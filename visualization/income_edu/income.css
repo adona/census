@@ -159,9 +159,9 @@ circle[state=faded] {
 	left: 70px;
 	width: calc((100% - 120px) / 4);
 	height: calc((100% - 110px) / 4);
+	background: white;
 	text-align: center;
 	font-size: 0.8rem;
-	background: white;
 }
 
 #infobox span {
