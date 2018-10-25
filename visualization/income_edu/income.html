@@ -328,6 +328,14 @@
 				.text("Occupation")
 				.attr("class", "static-text");
 
+			// Create the infobox
+			var infobox = d3.select("#chart")
+				.append("div")
+				.attr("id", "infobox");
+			infobox.append("span")
+				.text("Occupation")
+				.attr("class", "static-text");
+
       		// Prepare the data for visualization:
 			// Pre-compute perturbed positions on the x-axis for each datapoint so they're easier to see
 			for (var i in data) {
