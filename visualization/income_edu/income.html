@@ -376,6 +376,11 @@
 					.text(occp_description)
 				infobox.append("span")
 					.text(" ("+d3.format("$,")(wage) + ")");
+				infobox
+					.style("opacity", 0)
+					.transition()
+					.delay(10)
+					.style("opacity", 1);
 			}
 
 			function circleMouseOut(d) {	
