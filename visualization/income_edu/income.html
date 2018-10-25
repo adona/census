@@ -218,7 +218,7 @@
 				.attr("width", width)
 				.attr("height", height);
 			
-			// Create the axis
+			// Create the axes
 			// Manually space the ticks on the edu axis
 			var edu_ticks = [1, 2, 3, 4, 6, 7, 8, 10, 11, 12];
 			var edu_labels = ["None", "Some Primary / Secondary", "Some Highschool", "Highschool Diploma", 
@@ -245,7 +245,7 @@
 				.tickFormat((d,i) => edu_labels[i]);
 			var wage_axis = d3.axisLeft()
 				.scale(wage_scale)
-				.ticks(5, ",s");
+				.ticks(5, "$,s");
 
 			svg.append("g")
 				.attr("class", "x axis")
@@ -304,9 +304,13 @@
 
 					return 	label_style;
 				});
-
-
 			}
+
+			// Add y-axis title
+			chart_div.append("div")
+				.attr("class", "y-label")
+				.text("Annual Wage")
+				.attr("style", "width: 40px; text-align: right; transform: translate(1px,15px);");			
 
 
       		// Prepare the data for visualization:

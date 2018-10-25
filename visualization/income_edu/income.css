@@ -125,7 +125,7 @@ body {
 	font-size: 0.625rem;
 }
 
-.x-label {
+.x-label, .y-label {
 	position: absolute;
 	top: 0px;
 	left: 0px;
