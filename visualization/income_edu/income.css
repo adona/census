@@ -142,6 +142,18 @@ circle[state=faded] {
 	fill: var(--faded-color);
 }
 
+.median-line {
+	stroke-width: 2px;
+}
+
+.median-line[state=selected] {
+	stroke: #399393;
+}
+
+.median-line[state=mouseover] {
+	stroke: #a55a40;
+}
+
 .occp_label {
 	font-size: 0.8rem;
 }

@@ -23,32 +23,42 @@
 	<script>
 		var data, occupations, categories,
 			data_subsample, data_selected, data_mouseover,
-			edu_scale, wage_scale, draw_data;
+			edu_ticks, edu_scale, wage_scale, draw_data;
 
 		// Read the data
 		var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/asec16_worked_lastyear_10k.csv",
 			url_occp = "https://storage.googleapis.com/iron-flash-216615-dev/occ_hierarchical.json";
-		d3.csv(url_data, function(d) { // Load the data
-			data = d; // Save to global variable (for easier debugging)
-			d3.json(url_occp, function(d) { // Load the occupations
-				occupations = d; // Save to global variable (for easier debugging)
+		d3.csv(url_data, // Load the data
+			function(row) {
+				row["ASECWT"] = +row["ASECWT"];
+				row["INCTOT"] = +row["INCTOT"];
+				row["INCWAGE"] = +row["INCWAGE"];
+				row["WKSWORK1"] = +row["WKSWORK1"];
+				row["UHRSWORKLY"] = +row["UHRSWORKLY"];
+				row["spm_perc"] = +row["spm_perc"];
+				return row;
+			}, 
+			function(d) { // Data loaded
+				data = d; // Save to global variable (for easier debugging)
+				d3.json(url_occp, function(d) { // Load the occupations
+					occupations = d; // Save to global variable (for easier debugging)
 
-				preprocess_data();
-				initialize_visualization();
+					preprocess_data();
+					initialize_visualization();
+				});
 			});
-		});
 		
 		function preprocess_data() {
 			// 1. Filter data: Keep only people who:
 			// 	- were employed with an organization (as opposed to self-employed)
-			data = data.filter(person => +person["INCWAGE"] > 0);
+			data = data.filter(person => person["INCWAGE"] > 0);
 			// - TODO: I'm currently filtering out people with incomes > $200,000, when what I probably want to do 
 			// is either top-code them or handle this piece of code directly in the visualization.
-			data = data.filter(person => +person["INCWAGE"] <= 200000);
+			data = data.filter(person => person["INCWAGE"] <= 200000);
 			// 	- worked the entire year (50+ weeks)
-			data = data.filter(person => +person["WKSWORK1"] >= 50);
+			data = data.filter(person => person["WKSWORK1"] >= 50);
 			// 	- usually worked full time (35+ hours/week)
-			data = data.filter(person => +person["UHRSWORKLY"] >= 35);
+			data = data.filter(person => person["UHRSWORKLY"] >= 35);
 			
 			// 2. Remap the education field to lower granularity categories
 			var edu_level_new_descriptions = ["None", "Some primary/secondary", "Some highschool - no degree", 
@@ -134,7 +144,7 @@
 				data[i]["occp_category"] = occupations[data[i]["OCCLY"]]["category_code"];
 
 			// Create subsample of data to speed up visualization of "All Occupations"
-			data_subsample = data.filter(p => Math.random() < 0.3);
+			data_subsample = data.filter(p => Math.random() < 0.5);
 		}
 		
 		function initialize_visualization() {
@@ -225,7 +235,7 @@
 			
 			// Create the axis
 			// Manually space the ticks on the edu axis
-			var edu_ticks = [1, 2, 3, 4, 6, 7, 8, 10, 11, 12];
+			edu_ticks = [1, 2, 3, 4, 6, 7, 8, 10, 11, 12];
 			// .. and provide labels only for the most important ticks
 			var edu_labels = ["None", "", "", "Highschool Diploma", "", "", "Batchelor's Degree", "", "", "Doctorate Degree"];
 			var major_tick = [true, false, false, true, false, false, true, false, false, true];
@@ -278,14 +288,14 @@
 		function draw_data(data_to_draw, data_state) { 
 			// data_state in: {selected, mouseover}
 			var circles = d3.select("svg")
-				.selectAll("[state="+data_state+"]:not([out])")
+				.selectAll("circle[state="+data_state+"]:not([out])")
 				.data(data_to_draw, person=>person["CPSIDP"]);
 			
 			circles.enter()
 				.append('circle')
 					.attr('state', data_state)
 					.attr('cx', person => edu_scale(person["x_position"]))
-					.attr('cy', person => wage_scale(+person["INCWAGE"]))
+					.attr('cy', person => wage_scale(person["INCWAGE"]))
 					.attr('r', 2.25)
 					.on("mouseover", circleMouseOver)
 					.on("mouseout", circleMouseOut)
@@ -325,6 +335,47 @@
 				// Return circle radius to normal
 				d3.select(this).attr("r", 2.25);
 			}
+
+			// Also add median lines
+			var median_wages = [],
+				edu_codes = [...new Set(data_to_draw.map(x => x["educ_recode"]))];
+				for(var i in edu_codes) {
+					var edu_code = edu_codes[i],
+						data_with_edu_code = data_to_draw.filter(x => x["educ_recode"] == edu_code);
+					if(data_with_edu_code.length < 20) continue;
+					median_wages.push({
+						"edu_code": edu_code,
+						"weighted_median": weighted_median(data_with_edu_code, "INCWAGE", "ASECWT")
+					});
+				}
+			console.log(median_wages.map(x => x["weighted_median"]));
+			
+			var median_lines = d3.select("svg")
+				.selectAll(".median-line[state="+data_state+"]:not([out])")
+				.data(median_wages, x=>x["edu_code"]);
+			
+			var tick_distance = edu_scale(2)-edu_scale(1);
+			median_lines.enter()
+				.append("line")
+					.attr("class", "median-line")
+					.attr('state', data_state)
+					.attr("x1", x => edu_scale(edu_ticks[x["edu_code"]]) - 1/3*tick_distance)
+					.attr("x2", x => edu_scale(edu_ticks[x["edu_code"]]) + 1/3*tick_distance)
+					.attr("y1", x => wage_scale(x["weighted_median"]))
+					.attr("y2", x => wage_scale(x["weighted_median"]))
+					.style("opacity", 0)
+					.transition()
+						.style("opacity", 1)
+						.ease(d3.easeCubicOut)
+						.duration(300);
+
+			median_lines.exit()
+				.attr("out", "true")
+				.transition()
+					.style("opacity", 0)
+					.ease(d3.easeCubicIn)
+					.duration(300)
+					.remove();
 		}
 		
 		function process_occp_list_interaction(interaction, level, code) {
@@ -390,6 +441,27 @@
 			while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
 			while(v === 0) v = Math.random();
 			return Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+		}
+
+		function weighted_len(data, weights) {
+			return data.reduce((total, d) => total + d[weights], 0);
+		}
+		function weighted_median(data, field, weights) {
+			data.sort((a, b) => a[field] - b[field]);
+			var w_len = weighted_len(data, weights),
+				current_len = 0, 
+				w_median;
+			for(i=0; i<data.length; i++) {
+				current_len += data[i][weights];
+				if(current_len>=w_len/2) {
+					if(current_len > w_len/2)
+						w_median = data[i][field];
+					else 
+						w_median = (data[i][field]+data[i+1][field])/2;
+					break;
+				}
+			}
+			return w_median;
 		}
 	</script>
 </body>
