@@ -11,7 +11,8 @@
 
 body {
 	margin: 0px 5%;
-	font-family: Helvetica;	
+	font-family: Helvetica;
+	min-width: 800px;
 }
 
 /* ------------  Header ------------  */
@@ -121,7 +122,17 @@ body {
 }
 
 .tick text {
-	font-size: 0.6875rem;
+	font-size: 0.625rem;
+}
+
+.x-label, .y-label {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	text-align: center;
+	font-size: 0.625rem;
+	line-height: 0.6875rem;
+	overflow: hidden;
 }
 
 circle {

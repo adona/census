@@ -214,7 +214,7 @@
 			var chart_div = d3.select("#chart");
 			
 			// If this is a re-draw (e.g. window resize), first remove the existing chart
-			chart_div.select("svg").remove();	
+			chart_div.selectAll("*").remove();	
 
 			// Create a new SVG canvas
 			var width = chart_div.node().offsetWidth,
@@ -223,24 +223,26 @@
 				.attr("width", width)
 				.attr("height", height);
 			
-			// Create the axis
+			// Create the axes
 			// Manually space the ticks on the edu axis
 			var edu_ticks = [1, 2, 3, 4, 6, 7, 8, 10, 11, 12];
-			// .. and provide labels only for the most important ticks
-			var edu_labels = ["None", "", "", "Highschool Diploma", "", "", "Batchelor's Degree", "", "", "Doctorate Degree"];
-			var major_tick = [true, false, false, true, false, false, true, false, false, true];
+			var edu_labels = ["None", "Some Primary / Secondary", "Some Highschool", "Highschool Diploma", 
+				"Some College", "Associate's Degree", "Batchelor's Degree", 
+				"Master's Degree", "Professional Degree", "Doctorate Degree"];
 
 			var max_wage = 200000;
 			var edu_extent = [0.5, 12.5],
 				wage_extent = [0, max_wage];
 			
-			var margin = 50;
+			var margin = 50, 
+				x_axis_shift = 20,
+				y_axis_shift = 10;
 			edu_scale = d3.scaleLinear()
 				.domain(edu_extent)
-          		.range([margin+20, width-margin]);
+          		.range([margin+x_axis_shift, width-margin]);
       		wage_scale = d3.scaleLinear()
 				.domain(wage_extent)
-          		.range([height-margin-10, margin]);
+          		.range([height-margin-y_axis_shift, margin]);
 
 			var edu_axis = d3.axisBottom()
 				.scale(edu_scale)
@@ -248,7 +250,7 @@
 				.tickFormat((d,i) => edu_labels[i]);
 			var wage_axis = d3.axisLeft()
 				.scale(wage_scale)
-				.ticks(5, ",s");
+				.ticks(5, "$,s");
 
 			svg.append("g")
 				.attr("class", "x axis")
@@ -259,13 +261,62 @@
 				.attr("transform", "translate(" + margin + ",0)")
 				.call(wage_axis);
       
-			// After the axis get rendered, further customize the x axis ticks and labels:
-			// Make labeled ticks longer
-			d3.selectAll("g.x.axis g.tick line")
-				.attr("y2", (x, i) => major_tick[i] ? 15 : 6);
-			// Move labels lower to match the longer ticks
-			d3.selectAll("g.x.axis g.tick text")
-				.attr("y", (x, i) => major_tick[i] ? 20 : 11)
+			// After the axis get rendered, move x-axis labels out of the SVG and into divs in the #chart container
+			// Delete the SVG labels
+			d3.selectAll("g.x.axis g.tick text").remove();
+			
+			// Create the #chart div labels
+			x_labels = chart_div.selectAll('.x-label')
+				.data(edu_labels);
+			x_labels = x_labels.enter()
+				.append("div")
+				.attr("class", "x-label")
+				.text(x => x);
+			
+			// Adjust their width based on the distance between ticks
+			var min_label_width = 55,
+				tick_distance = 0.9*(edu_scale(2)-edu_scale(1)),
+				label_width;
+
+			if (tick_distance >= min_label_width) { 
+				// If window is large enough, show the labels horizontally, of width tick_distance
+				label_width = tick_distance;
+				x_labels.attr("style", function(x, i) {
+					var label_style = "width: " + label_width + "px; ";
+					// And translate them to be centered on the tickmarks. 
+					var x_pos = edu_scale(edu_ticks[i]) - label_width/2,
+						y_pos = height - margin + 15;
+					label_style += "transform: translate(" + x_pos + "px," + y_pos + "px);";
+					return 	label_style;
+				});
+			} else {
+				// If the window is too small for the ticks to be horizontal, make them diagonal
+				// Of width min_label_width
+				label_width = min_label_width;
+				x_labels.attr("style", function(x, i) {
+					var label_style = "width: " + label_width + "px; ";
+					
+					// Text aligned right
+					label_style += "text-align: right; "
+					
+					// Translated so that the top-left corner is aligned with the tickmarks
+					var x_pos = edu_scale(edu_ticks[i]) - label_width - 5,
+						y_pos = height - margin + 13;
+					label_style += "transform: translate(" + x_pos + "px," + y_pos + "px) ";
+
+					// And rotated 45 degrees
+					label_style += "rotate(-60deg); transform-origin: right top;";
+
+					return 	label_style;
+				});
+			}
+
+			// Add y-axis title
+			chart_div.append("div")
+				.attr("class", "y-label")
+				.text("Annual Wage")
+				.attr("style", "width: 40px; text-align: right; transform: translate(1px,15px);");			
+
 
       		// Prepare the data for visualization:
 			// Pre-compute perturbed positions on the x-axis for each datapoint so they're easier to see
