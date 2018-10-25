@@ -361,15 +361,21 @@
 
 				// Create the infobox
 				var occp_description = occupations[d["OCCLY"]]["description"];
+				var wage = d["INCWAGE"];
+				// First make sure the old infobox was removed 
+				// (it should on mouseout, but sometimes it fails to due to a race condition)
+				d3.select("#infobox").remove();
+				// Then create the new one
 				var infobox = d3.select("#chart")
 					.append("div")
 					.attr("id", "infobox");
 				infobox.append("span")
-					.attr("class", "static-text")
+					.attr("style", "font-weight: 700;")
 					.text("Occupation");
 				infobox.append("span")
-					.attr("class", "dynamic-text")
 					.text(occp_description)
+				infobox.append("span")
+					.text(" ("+d3.format("$,")(wage) + ")");
 			}
 
 			function circleMouseOut(d) {	
