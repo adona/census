@@ -42,14 +42,16 @@
 			// 1. Filter data: Keep only people who:
 			// 	- were employed with an organization (as opposed to self-employed)
 			data = data.filter(person => +person["INCWAGE"] > 0);
-			// - TODO: I'm currently filtering out people with incomes > $200,000, when what I probably want to do 
-			// is either top-code them or handle this piece of code directly in the visualization.
-			data = data.filter(person => +person["INCWAGE"] <= 200000);
 			// 	- worked the entire year (50+ weeks)
 			data = data.filter(person => +person["WKSWORK1"] >= 50);
 			// 	- usually worked full time (35+ hours/week)
 			data = data.filter(person => +person["UHRSWORKLY"] >= 35);
-			
+			// - Top-code people with incomes > $200,000.
+			data = data.map(function(person) {
+				if(person["INCWAGE"] > 200000) person["INCWAGE"] = 200000;
+				return person;
+			});
+
 			// 2. Remap the education field to lower granularity categories
 			var edu_level_new_descriptions = ["None", "Some primary/secondary", "Some highschool - no degree", 
 										"Highschool diploma", "Some college - no degree", "Associate's degree", 
