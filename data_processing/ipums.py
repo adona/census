@@ -293,6 +293,22 @@ def weighted_counter(data, field, weights_field):
     w_counter = sorted(w_counter.items(), key=lambda kv: kv[1], reverse = True)
     return w_counter
 
+def compute_estimate_and_standard_error(f, weight_field, replicate_fields):
+    # All census datasets use a method based on replicate weights to compute 
+    # standard error estimates. See explanation here: https://cps.ipums.org/cps/repwt.shtml
+
+    # Compute the estimate using the default weight
+    estimate = f(weight_field)
+    # Also re-compute the estimate using each replicate weight
+    # and use them to compute the standard error
+    se = 0
+    for i in range(160):
+        rw = replicate_fields+str(i+1)
+        replicate_estimate = f(rw)
+        se += (estimate - replicate_estimate) ** 2
+    se = sqrt(4/160*se)
+    return estimate, se
+
 ### Generate unweighted dataset by expanding and subsampling the data
 
 def expand_and_subsample_data(data, weights_field, subsampling_factor, randseed = None):
