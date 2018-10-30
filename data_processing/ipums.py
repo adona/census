@@ -286,12 +286,26 @@ def weighted_counter(data, field, weights_field):
     # Initialize counter to all zeros
     field_values = list(set([d[field] for d in data]))
     w_counter = {v: 0 for v in field_values}
-    # Compute the counts
-    for row in data: 
+    # Compute the weighted counts
+    for row in data:
         w_counter[row[field]] += row[weights_field]
+    # Convert to list of dictionaries
+    w_counter_list = []
+    for key in w_counter:
+        w_counter_list.append({
+            "key": key,
+            "count": w_counter[key]
+        })
     # Sort descending by count
-    w_counter = sorted(w_counter.items(), key=lambda kv: kv[1], reverse = True)
-    return w_counter
+    w_counter_list = sorted(w_counter_list, key=lambda x: x["count"], reverse = True)
+    # Annotate with percentage of total count and cumulative distribution
+    total_count = weighted_len(data, weights_field)
+    cumulative = 0
+    for entry in w_counter_list:
+        entry["perc"] = entry["count"]/total_count*100 
+        cumulative += entry["perc"]
+        entry["cumulative"] = cumulative
+    return w_counter_list
 
 def compute_estimate_and_standard_error(f, weight_field, replicate_fields):
     # All census datasets use a method based on replicate weights to compute 
@@ -397,3 +411,17 @@ def parse_dollar_amt(amt_string):
 def log(text):
     if verbose:
         print(text)
+
+print("Here!")
+
+test = [
+    {"x": 1, "count": 3},
+    {"x": 2, "count": 5},
+    {"x": 3, "count": 1},
+    {"x": 4, "count": 7},
+    {"x": 2, "count": 6},
+    {"x": 1, "count": 4},
+    {"x": 3, "count": 2},
+    {"x": 4, "count": 1}
+]
+
