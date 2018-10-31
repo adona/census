@@ -153,6 +153,17 @@ circle[state=faded] {
 	fill: var(--faded-color);
 }
 
-.occp_label {
-	font-size: 0.8rem;
+#infobox {
+	position: absolute;
+	top: 65px;
+	left: 70px;
+	width: calc((100% - 120px) / 4);
+	background: white;
+	text-align: center;
+	font-size: 0.75rem;
+	overflow: hidden;
+}
+
+#infobox span {
+	display: block;
 }
