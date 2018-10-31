@@ -411,17 +411,3 @@ def parse_dollar_amt(amt_string):
 def log(text):
     if verbose:
         print(text)
-
-print("Here!")
-
-test = [
-    {"x": 1, "count": 3},
-    {"x": 2, "count": 5},
-    {"x": 3, "count": 1},
-    {"x": 4, "count": 7},
-    {"x": 2, "count": 6},
-    {"x": 1, "count": 4},
-    {"x": 3, "count": 2},
-    {"x": 4, "count": 1}
-]
-
