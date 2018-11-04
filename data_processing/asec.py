@@ -9,11 +9,11 @@ data_dictionary_compact = {} # Gets read in at the same time as the data in the 
 def get_description(field, code):
     return data_dictionary_compact[field][code]
 
-def load_and_preprocess_asec_data(filepath_data, filepath_dictionary):
+def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="All"):
     # Load the data and data dictionary
     global data_dictionary_compact
     data_dictionary_compact = load_JSON(filepath_dictionary)
-    data = load_csv_data(filepath_data) # 185,487
+    data = load_csv_data(filepath_data, fields=fields) # 185,487
 
     # Preprocess the data
     # Filter out people who weren't in the rotation to be give a CPS interview ("ASEC oversampling")
@@ -218,9 +218,77 @@ def explore_poverty_demographics(data):
     ax.set_yticklabels([x["key"] for x in jobs])
     ax.invert_yaxis()
 
+def explore_housing_family_doubling_up(data):
+    # Identify households in which family members are "doubling up"
+    # i.e. households which include at least one adult relative of the householder
+    # (adult parent, child, grandchild, sibling, or other adult relative)
+    cpsids = list(set([p["CPSID"] for p in data]))
+    households = {cpsid: {"persons": [], "doubling_up": False} for cpsid in cpsids}
+    for p in data:
+        cpsid = p["CPSID"]
+        hh = households[cpsid]
+        hh["persons"].append(p)
+        if (p["AGE"] >= 21) and (p["RELATE"] in ["301", "501", "701", "901", "1001"]):
+            hh["doubling_up"] = True
+
+    # Convert households data structure from dictionary to list (so I can compute weighted statistics over it)
+    households_list = []
+    for cpsid in cpsids:
+        hh = households[cpsid]
+        # While we're at it, also annotate with household poverty level and threshhold, weight and replicate weights.
+        p = hh["persons"][0]
+        hh["spm_perc"] = p["spm_perc"]
+        hh["SPMTHRESH"] = p["SPMTHRESH"]
+        hh["CPSID"] = cpsid
+        hh["ASECWTH"] = float(p["ASECWTH"])
+        for i in range(1, 161, 1):
+            hh["REPWT"+str(i)] = float(p["REPWT"+str(i)])
+        households_list.append(hh)
+    households = households_list
+
+    # Compute what % of all households are doubling up
+    n_doubling_up = weighted_len([hh for hh in households if hh["doubling_up"] == True], "ASECWTH")
+    n_households = weighted_len(households, "ASECWTH")
+    perc_doubling_up = n_doubling_up / n_households * 100
+    print(f"{perc_doubling_up :.2f}% households are doubling up.") # 15.14%
+
+    # Visualize % of households doubling up by poverty level
+    wbin = 100
+    bins = list(range(0, 701, wbin))
+    perc_doubling_up_bin = []
+    se = []
+    for bin_left in bins[:-1]:
+        bin_right = bin_left + wbin
+        all_households_bin = [hh for hh in households if hh["spm_perc"] >= bin_left and hh["spm_perc"] < bin_right]
+        doubling_up_bin = [hh for hh in all_households_bin if hh["doubling_up"] == True]        
+        f = lambda wf: weighted_len(doubling_up_bin, wf)/weighted_len(all_households_bin, wf)*100
+        perc_bin, se_bin = compute_estimate_and_standard_error(f, "ASECWTH", "REPWT")
+        perc_doubling_up_bin.append(perc_bin)
+        se.append(se_bin)
+
+    mid_bins = [x + wbin/2 for x in bins[:-1]]
+    fig, ax = plt.subplots()
+    ax.bar(mid_bins, perc_doubling_up_bin, width=80, yerr=se)
+    ax.set_xticks(bins)
+    ax.set_xlabel("Percentage of poverty level")
+    ax.set_title('Percentage of households households in which family members are "doubling up", by poverty level')
+
+def print_household_profile(cpsid):
+    hh = [p for p in data if p["CPSID"] == cpsid]
+    for (i, p) in enumerate(hh):
+        print(f'{i}. {get_description("RELATE",p["RELATE"])} - {p["AGE"]}; ' + 
+            f'{get_description("SEX",p["SEX"])}; ' + 
+            f'{get_description("MARST",p["MARST"])}; ' + 
+            f'{get_description("EMPSTAT",p["EMPSTAT"])}; ' + 
+            f'{get_description("FTYPE",p["FTYPE"])}; ' + 
+            f'{get_description("FAMREL",p["FAMREL"])}.')
+    print("")
+
+
 ###
 
 filepath_data = DATADIR + "raw/asec16r.csv"
 filepath_dictionary = DATADIR + "dictionaries/asec16_dictionary_compact_extended.json"
 data = load_and_preprocess_asec_data(filepath_data, filepath_dictionary)
-# explore_poverty_demographics(data)
+
+explore_housing_family_doubling_up(data)
