@@ -24,6 +24,7 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
     # Convert int and float variables
     log("Converting int and float variables.. ")
     int_vars = ["AGE", "UHRSWORKT", "UHRSWORKLY", "WKSWORK1", "PTWEEKS", "INCTOT", "INCWAGE", "INCBUS", "INCFARM"]
+    int_vars += ["LINENO", "ASPOUSE", "PECOHAB", "PELNMOM", "PELNDAD"]
     float_vars = ["ASECWT", "SPMTOTRES", "SPMTHRESH"]
     # Also convert the replicate weights
     for rw in ["REPWT", "REPWTP"]:
@@ -33,9 +34,9 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
             if(int_var in p):
                 p[int_var] = int(p[int_var])
         for float_var in float_vars:
-            if(float_var in p):
-                p[float_var] = float(p[float_var])
-    
+           if(float_var in p):
+               p[float_var] = float(p[float_var])
+   
     # Annotate data with industry
     # Load hierarchical occupations dictionary
     filepath_occ = DATADIR + "dictionaries/occ_hierarchical.json"
@@ -219,48 +220,32 @@ def explore_poverty_demographics(data):
     ax.invert_yaxis()
 
 def explore_housing_family_doubling_up(data):
-    # Identify households in which family members are "doubling up"
-    # i.e. households which include at least one adult relative of the householder
-    # (adult parent, child, grandchild, sibling, or other adult relative)
-    cpsids = list(set([p["CPSID"] for p in data]))
-    households = {cpsid: {"persons": [], "doubling_up": False} for cpsid in cpsids}
-    for p in data:
-        cpsid = p["CPSID"]
-        hh = households[cpsid]
-        hh["persons"].append(p)
-        if (p["AGE"] >= 21) and (p["RELATE"] in ["301", "501", "701", "901", "1001"]):
-            hh["doubling_up"] = True
+    # Bundle persons into households, and annotate the households with family subunits
+    # A family subunit consists of a person + their spouse/unmarried partner (if any) + DEPENDENT children (if any)
+    # Dependent children are defined as <21 years old who do NOT have their own family sub-unit
+    # (spouse/unmarried partner or own children).
+    households = bundle_persons_into_households(data)
+    annotate_households_with_family_subunits(households)
 
-    # Convert households data structure from dictionary to list (so I can compute weighted statistics over it)
-    households_list = []
-    for cpsid in cpsids:
-        hh = households[cpsid]
-        # While we're at it, also annotate with household poverty level and threshhold, weight and replicate weights.
-        p = hh["persons"][0]
-        hh["spm_perc"] = p["spm_perc"]
-        hh["SPMTHRESH"] = p["SPMTHRESH"]
-        hh["CPSID"] = cpsid
-        hh["ASECWTH"] = float(p["ASECWTH"])
-        for i in range(1, 161, 1):
-            hh["REPWT"+str(i)] = float(p["REPWT"+str(i)])
-        households_list.append(hh)
-    households = households_list
+    # Households with more than one family subunit are doubling up
+    # E.g. A nuclear family + the householder's elderly parent.
+    doubling_up = [hh for hh in households if hh["n_subunits"] > 1] # 7,502 households 
 
     # Compute what % of all households are doubling up
-    n_doubling_up = weighted_len([hh for hh in households if hh["doubling_up"] == True], "ASECWTH")
+    n_doubling_up = weighted_len(doubling_up, "ASECWTH")
     n_households = weighted_len(households, "ASECWTH")
     perc_doubling_up = n_doubling_up / n_households * 100
-    print(f"{perc_doubling_up :.2f}% households are doubling up.") # 15.14%
+    print(f"{perc_doubling_up :.2f}% households are doubling up.") # 15.09%
 
     # Visualize % of households doubling up by poverty level
     wbin = 100
-    bins = list(range(0, 701, wbin))
+    bins = list(range(0, 1001, wbin))
     perc_doubling_up_bin = []
     se = []
     for bin_left in bins[:-1]:
         bin_right = bin_left + wbin
         all_households_bin = [hh for hh in households if hh["spm_perc"] >= bin_left and hh["spm_perc"] < bin_right]
-        doubling_up_bin = [hh for hh in all_households_bin if hh["doubling_up"] == True]        
+        doubling_up_bin = [hh for hh in doubling_up if hh["spm_perc"] >= bin_left and hh["spm_perc"] < bin_right]        
         f = lambda wf: weighted_len(doubling_up_bin, wf)/weighted_len(all_households_bin, wf)*100
         perc_bin, se_bin = compute_estimate_and_standard_error(f, "ASECWTH", "REPWT")
         perc_doubling_up_bin.append(perc_bin)
@@ -271,7 +256,96 @@ def explore_housing_family_doubling_up(data):
     ax.bar(mid_bins, perc_doubling_up_bin, width=80, yerr=se)
     ax.set_xticks(bins)
     ax.set_xlabel("Percentage of poverty level")
-    ax.set_title('Percentage of households households in which family members are "doubling up", by poverty level')
+    ax.set_title('Percentage of households in which family members are "doubling up", by poverty level')
+    # TODO: Switch to fractions (3x poverty line) instead of %s (300% poverty line)
+
+    print("Here!")
+
+def bundle_persons_into_households(data):
+    # Create a dictionary of households, indexed by CPSID
+    cpsids = list(set([p["CPSID"] for p in data]))
+    households = {cpsid: {"persons": []} for cpsid in cpsids}
+    for p in data:
+        hh = households[p["CPSID"]]
+        hh["persons"].append(p)
+    # Convert to list (so I can compute weighted statistics over it)
+    households_list = []
+    for cpsid in cpsids:
+        hh = households[cpsid]
+        hh["CPSID"] = cpsid
+        households_list.append(hh)
+    households = households_list
+    # Annotate households with relevant info 
+    for hh in households:
+        p0 = hh["persons"][0] # householder
+        hh["spm_perc"] = p0["spm_perc"] # poverty info
+        hh["SPMTHRESH"] = p0["SPMTHRESH"]
+        hh["ASECWTH"] = float(p0["ASECWTH"]) # weights
+        for i in range(1, 161, 1): # including replicate weights
+            hh["REPWT"+str(i)] = float(p0["REPWT"+str(i)])
+    return households
+
+def annotate_households_with_family_subunits(households):
+    # Split SPM family units into family sub-units consisting only of:
+    # a person + their spouse/unmarried partner (if any) + DEPENDENT children (if any)
+    # NOTE: Dependent children are defined as <21 years old who do NOT have their own family sub-unit
+    # (spouse/unmarried partner or own children).
+    # So mother+father+16yo is one unit, mother+father+16yo child+1yo grandchild is two units and the 
+    # 16yo is considered an independent adult rather than a dependent child.
+    for hh in households:
+        p0 = hh["persons"][0] # householder
+        p_spm = [p for p in hh["persons"] if p["SPMFAMUNIT"] == p0["SPMFAMUNIT"]] # persons in the SPM unit
+        p_spm = sorted(p_spm, key=lambda p: p["AGE"], reverse=True) # sort decreasing by age
+        for p in p_spm: # to begin with, nobody is assigned to any subunit
+            p["subunit"] = -1
+        n_subunits = 0
+        for p in p_spm: # for each person in the SPM unit (in decreasing age order)
+            if is_independent_adult(p, hh): # independent adult
+                partner = get_partner(p, hh)
+                if(partner != None) and (partner["subunit"] != -1):
+                    p["subunit"] = partner["subunit"] # same subunit as partner
+                else: # new subunit!
+                    n_subunits += 1
+                    p["subunit"] = n_subunits
+            else: # children
+                parents = get_parents(p, hh)
+                if len(parents) > 0:
+                    p["subunit"] = parents[0]["subunit"] # same subunit as parent
+        # Anybody at this point with subunit -1 are "dependents" who haven't been allocated to a subunit yet
+        # because they don't have a parent in the house.
+        # If the householder is one of them (e.g. a 18yo living with friends), allocate them to their own subunit.
+        if p0["subunit"] == -1:
+            n_subunits += 1
+            p0["subunit"] = n_subunits
+        # Everybody else, allocate to the householder's subunit
+        # These will be e.g. grandchildren living with their grandparents
+        for p in p_spm:
+            if p["subunit"] == -1:
+                p["subunit"] = p0["subunit"]
+        hh["n_subunits"] = n_subunits
+    return households
+
+### Family relationships
+
+def get_parents(p, hh):
+    parents = [p2 for p2 in hh["persons"] if p2["LINENO"] in [p["PELNMOM"], p["PELNDAD"]]]
+    return parents
+
+def get_partner(p, hh):
+    partner = [p2 for p2 in hh["persons"] if p2["LINENO"] in [p["ASPOUSE"], p["PECOHAB"]]]
+    if len(partner)>0:
+        return partner[0]
+    else: 
+        return None
+
+def get_children(p, hh):
+    children = [p2 for p2 in hh["persons"] if p["LINENO"] in [p2["PELNMOM"], p2["PELNDAD"]]]
+    return children
+
+def is_independent_adult(p, hh):
+    # An independent adult is a person who is either 21+ years old OR has own primary family
+    # (i.e. a spouse/unmarried partner and/or children)
+    return (p["AGE"] >= 21) or (get_partner(p, hh) != None) or (len(get_children(p, hh))>0)
 
 def print_household_profile(cpsid):
     hh = [p for p in data if p["CPSID"] == cpsid]
@@ -281,14 +355,14 @@ def print_household_profile(cpsid):
             f'{get_description("MARST",p["MARST"])}; ' + 
             f'{get_description("EMPSTAT",p["EMPSTAT"])}; ' + 
             f'{get_description("FTYPE",p["FTYPE"])}; ' + 
-            f'{get_description("FAMREL",p["FAMREL"])}.')
-    print("")
+            f'{get_description("FAMREL",p["FAMREL"])}')
+    # print("")
 
+### 
 
-###
-
-filepath_data = DATADIR + "raw/asec16r.csv"
-filepath_dictionary = DATADIR + "dictionaries/asec16_dictionary_compact_extended.json"
+filepath_data = DATADIR + "raw/asec16r2.csv"
+filepath_dictionary = DATADIR + "dictionaries/asec16_dictionary_compact_extended_2.json"
 data = load_and_preprocess_asec_data(filepath_data, filepath_dictionary)
-
 explore_housing_family_doubling_up(data)
+
+print("Here!")
