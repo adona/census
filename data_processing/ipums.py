@@ -180,7 +180,7 @@ def convert_data_dictionary_to_json(filepath_in_IPUMS, rectypes, filepath_out_de
                 line = re.split("\t+", line)
                 if(len(line) == 1):   # This is not a {code: description} pair, but extra annotation I can skip
                     continue
-                code = line[0]
+                code = int(line[0])
                 desc = line[1]
                 fvalid[code] = desc
             data_dictionary[fname]["field_type"] = "categorical"
