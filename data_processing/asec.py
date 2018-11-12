@@ -25,17 +25,19 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
     log("Converting int and float variables.. ")
     int_vars = ["AGE", "UHRSWORKT", "UHRSWORKLY", "WKSWORK1", "PTWEEKS", "INCTOT", "INCWAGE", "INCBUS", "INCFARM"]
     int_vars += ["LINENO", "ASPOUSE", "PECOHAB", "PELNMOM", "PELNDAD"]
+    int_vars += ["SPMNADULTS", "SPMNCHILD", "SPMNPERS"]
     float_vars = ["ASECWT", "SPMTOTRES", "SPMTHRESH"]
     # Also convert the replicate weights
     for rw in ["REPWT", "REPWTP"]:
         float_vars += [rw+str(i) for i in range(1,161,1)]
-    for p in data: 
-        for int_var in int_vars:
-            if(int_var in p):
+    for int_var in int_vars:
+        if int_var in data[0]: # If one of the variables we read
+            for p in data:
                 p[int_var] = int(p[int_var])
-        for float_var in float_vars:
-           if(float_var in p):
-               p[float_var] = float(p[float_var])
+    for float_var in float_vars:
+        if float_var in data[0]: # If one of the variables we read
+            for p in data:
+                p[float_var] = float(p[float_var])
    
     # Annotate data with industry
     # Load hierarchical occupations dictionary
@@ -358,7 +360,61 @@ def print_household_profile(cpsid):
             f'{get_description("FAMREL",p["FAMREL"])}')
     # print("")
 
-### 
+### SPM Units
+
+def SPM_family_scaling(nadults, nchildren): # Family scaling factor
+    if (nadults==1 and nchildren==0): # 1 adult
+        scale = 1
+    elif (nadults==2 and nchildren==0): # 2 adults
+        scale = 1.41
+    elif (nadults==1 and nchildren>0): # single parents
+        scale = (1 + 0.8 + 0.5*(nchildren-1))**0.7
+    else: # all other families
+        scale = (nadults + 0.5*nchildren)**0.7
+    return scale
+
+def sanity_check_spmthresholds(data):
+    ### Make sure I understand how SPMTHRESH is calculated:
+    #      For each COUNTY and SPMMORT (tenure) there is a unique threshhold for a one-person SPM unit
+    #      which then gets adjusted for family structure (scaling factor give by SPM_family_scaling)
+    log("Sanity check that I understand how SPM thresholds are calculated..")
+
+    # Check that for each COUNTY and SPMMORT (tenure) there is a unique threshhold once I undo the family scaling
+    counties = sorted(list(set([p["COUNTY"] for p in data])))
+    tenures = sorted(list(set([p["SPMMORT"] for p in data])))
+    thresholds = {county:{tenure: None for tenure in tenures} for county in counties}
+    for county in counties[1:]: # For each county
+        for tenure in tenures: # For each tenure
+            persons = [p for p in data if p["COUNTY"] == county and p["SPMMORT"] == tenure]
+            # print(f"county: {county}, tenure: {tenure}, # persons: {len(persons)}")
+            if(len(persons) > 0):
+                threshs = [round(p["SPMTHRESH"] / SPM_family_scaling(p["SPMNADULTS"], p["SPMNCHILD"]), 2) for p in persons]
+                threshs = list(set(threshs))
+                assert(len(threshs) == 1) # If you reverse the family scaling factor, there is a unique threshhold
+                thresholds[county][tenure] = threshs[0]
+
+    # Sanity check that for all persons for which I know the COUNTY, my SPMTHRESH calculation agrees with the data
+    for i,p in enumerate(data):
+        if(p["COUNTY"] != "0"):
+            my_thresh = thresholds[p["COUNTY"]][p["SPMMORT"]] * SPM_family_scaling(p["SPMNADULTS"], p["SPMNCHILD"])
+            assert(abs(my_thresh - p["SPMTHRESH"])<1)
+
+    # Sanity check that adults for the purpose of SPMNCHILD are defined as >=18yo OR the householder or their spouse
+    households = bundle_persons_into_households(data)
+    adult_age = 18
+    for i,hh in enumerate(households):
+        p0 = hh["persons"][0]
+        spmfam = [p for p in hh["persons"] if p["SPMFAMUNIT"] == p0["SPMFAMUNIT"]]
+        npers = len(spmfam)
+        adults = [p for p in spmfam if p["AGE"]>= adult_age or p["RELATE"] in ["101", "201"]]
+        nadults = len(adults)
+        nchild = npers - nadults
+        if not ((npers == p0["SPMNPERS"]) and (p0["SPMNPERS"] == p0["SPMNADULTS"] + p0["SPMNCHILD"]) and (nadults == p0["SPMNADULTS"]) and (nchild == p0["SPMNCHILD"])):
+            print(i)
+            print_household_profile(p0["CPSID"])
+            print()
+
+###########
 
 filepath_data = DATADIR + "raw/asec16r2.csv"
 filepath_dictionary = DATADIR + "dictionaries/asec16_dictionary_compact_extended_2.json"
