@@ -26,7 +26,11 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
     int_vars = ["AGE", "UHRSWORKT", "UHRSWORKLY", "WKSWORK1", "PTWEEKS", "INCTOT", "INCWAGE", "INCBUS", "INCFARM"]
     int_vars += ["LINENO", "ASPOUSE", "PECOHAB", "PELNMOM", "PELNDAD"]
     int_vars += ["SPMNADULTS", "SPMNCHILD", "SPMNPERS"]
-    float_vars = ["ASECWT", "SPMTOTRES", "SPMTHRESH"]
+    int_vars += ["INCSS", "INCWELFR", "INCRETIR", "INCSSI", "INCINT", "INCUNEMP", "INCWKCOM", 
+        "INCVET", "INCSURV", "INCDISAB", "INCDIVID", "INCRENT", "INCEDUC", "INCCHILD", "INCASIST", "INCOTHER"]
+    float_vars = ["SPMLUNCH", "SPMCAPHOUS", "SPMWIC", "SPMHEAT", "SPMSNAP", "SPMEITC", "SPMMEDXPNS", "SPMCAPXPNS", "SPMCHSUP", 
+    "SPMSTTAX", "SPMFEDTAXAC", "SPMFEDTAXBC","SPMFICA"]
+    float_vars += ["ASECWT", "SPMTOTRES", "SPMTHRESH"]
     # Also convert the replicate weights
     for rw in ["REPWT", "REPWTP"]:
         float_vars += [rw+str(i) for i in range(1,161,1)]
@@ -325,7 +329,6 @@ def annotate_households_with_family_subunits(households):
             if p["subunit"] == -1:
                 p["subunit"] = p0["subunit"]
         hh["n_subunits"] = n_subunits
-    return households
 
 ### Family relationships
 
@@ -362,6 +365,8 @@ def print_household_profile(cpsid):
 
 ### SPM Units
 
+# Poverty threshholds
+
 def SPM_family_scaling(nadults, nchildren): # Family scaling factor
     if (nadults==1 and nchildren==0): # 1 adult
         scale = 1
@@ -373,7 +378,7 @@ def SPM_family_scaling(nadults, nchildren): # Family scaling factor
         scale = (nadults + 0.5*nchildren)**0.7
     return scale
 
-def sanity_check_spmthresholds(data):
+def sanity_check_spmthresholds(data, households):
     ### Make sure I understand how SPMTHRESH is calculated:
     #      For each COUNTY and SPMMORT (tenure) there is a unique threshhold for a one-person SPM unit
     #      which then gets adjusted for family structure (scaling factor give by SPM_family_scaling)
@@ -400,7 +405,6 @@ def sanity_check_spmthresholds(data):
             assert(abs(my_thresh - p["SPMTHRESH"])<1)
 
     # Sanity check that adults for the purpose of SPMNCHILD are defined as >=18yo OR the householder or their spouse
-    households = bundle_persons_into_households(data)
     adult_age = 18
     for i,hh in enumerate(households):
         p0 = hh["persons"][0]
@@ -413,6 +417,75 @@ def sanity_check_spmthresholds(data):
             print(i)
             print_household_profile(p0["CPSID"])
             print()
+
+# Family resources
+
+income_sources = {
+    "INCWAGE" : "Wage and salary income", 
+    "INCBUS" : "Non-farm business income", 
+    "INCFARM" : "Farm income", 
+    "INCSS" : "Social Security income", 
+    "INCWELFR" : "Welfare (public assistance) income", 
+    "INCRETIR" : "Retirement income", 
+    "INCSSI" : "Income from SSI", 
+    "INCINT" : "Income from interest", 
+    "INCUNEMP" : "Income from unemployment benefits", 
+    "INCWKCOM" : "Income from worker's compensation", 
+    "INCVET" : "Income from veteran's benefits", 
+    "INCSURV" : "Income from survivor's benefits", 
+    "INCDISAB" : "Income from disability benefits", 
+    "INCDIVID" : "Income from dividends", 
+    "INCRENT" : "Income from rent", 
+    "INCEDUC" : "Income from educational assistance", 
+    "INCCHILD" : "Income from child support", 
+    "INCASIST" : "Income from assistance", 
+    "INCOTHER" : "Income from other Source not specified"
+}
+in_kind_benefits = {
+    "SPMLUNCH" : "SPM unit's school lunch value", 
+    "SPMCAPHOUS" : "SPM unit's capped housing subsidy", 
+    "SPMWIC" : "SPM unit's WIC value", 
+    "SPMHEAT" : "SPM unit's energy subsidy", 
+    "SPMSNAP" : "SPM unit's SNAP subsidy",
+    "SPMEITC": 	"SPM unit's federal EITC",
+}
+expenses = {
+    "SPMMEDXPNS" : "SPM unit's medical out-of-pocket and Medicare B subsidy", 
+    "SPMCAPXPNS" : "SPM unit's capped work and child care expenses", 
+    "SPMCHSUP" : "SPM unit's child support paid", 
+    "SPMSTTAX" : "SPM unit's state tax", 
+    "SPMFEDTAXBC_2": "SPM unit's federal tax (before EITC)",
+    "SPMFICA" : "SPM unit's FICA and federal retirement"
+}
+
+def correct_fed_tax(data):
+    for p in data:
+        p["SPMFEDTAXBC_2"] = float(p["SPMFEDTAXAC"]) + float(p["SPMEITC"])
+
+def sanity_check_family_resources(data, households):
+    correct_fed_tax(data)
+    log("Total family resource estimates that are off by >$10: ...")
+    for hh in households:
+        p0 = hh["persons"][0]
+        persons = [p for p in hh["persons"] if p["SPMFAMUNIT"] == p0["SPMFAMUNIT"]]
+        # Calculate total family resources
+        # Add incomes for persons 15+ yo
+        total_resources = 0
+        for p in persons:
+            if p["AGE"] >= 15:
+                for income in income_sources:
+                    total_resources += p[income]
+        # Add family-wide benefits
+        for benefit in in_kind_benefits:
+            total_resources += p[benefit]
+        # Substract family-wide expenses
+        for expense in expenses:
+            total_resources -= p[expense]
+        if abs(total_resources - p["SPMTOTRES"])>10:
+            print(f"(CPSID: {hh['CPSID']}) {round(total_resources - p['SPMTOTRES'],2)}")
+    # Only 5 households have family resource estimates off by >$10, and they are all off by 
+    # about $50. I can't figure out why, but I'm OK with that level of error
+
 
 ###########
 
