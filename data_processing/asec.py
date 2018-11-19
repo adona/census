@@ -82,6 +82,13 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
             for p in data:
                 p[float_var] = float(p[float_var])
    
+    # Normalize person weights so that across the entire dataset they sum to the US population
+    us_population = 323.4*(10**6)
+    ndata = weighted_len(data, "ASECWT") # total # of persons the ASEC dataset represents
+    norm = us_population / ndata # roughly 1.5 — normalization factor to convert ASEC estimates to US population estimates
+    for p in data: 
+        p["ASECWT"] = norm*p["ASECWT"]
+
     # Annotate data with industry
     # Load hierarchical occupations dictionary
     filepath_occ = DATADIR + "dictionaries/occ_hierarchical.json"
@@ -99,7 +106,7 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
     for p in data:
         p["spm_perc"] = p["SPMTOTRES"] / p["SPMTHRESH"] * 100
 
-    # 
+    # TODO: Explain tax data correction
     correct_fed_tax(data)
 
     return data
@@ -528,37 +535,45 @@ def explore_financial_impact_doubling_up(doubling_up):
             subunit["SPMTHRESH"] = hh["SPMTHRESH"] / SPM_family_scaling(hh["SPMNADULTS"], hh["SPMNCHILD"]) * SPM_family_scaling(nadults, nchild)
             subunit["spm_perc_partial"] = subunit["SPMTOTRES_partial"] / subunit["SPMTHRESH"] * 100
 
-    # 3. Visualize: Poverty level of doubled-up families vs. individual family subunits
-    log("Visualize: Poverty level of doubled-up families vs. individual family subunits.. ")
+    ### So what is the effect of doubling up on poverty?
+    # % households where at least one subunit is in poverty
+    has_subunit_poverty = [hh for hh in doubling_up 
+        if len([subunit for subunit in hh["subunits"] if subunit["spm_perc_partial"]<100])>0]
+    perc_has_subunit_poverty = weighted_len(has_subunit_poverty, "ASECWTH")/weighted_len(doubling_up, "ASECWTH")*100 # 58.7% of all households doubling up
+    log(f"{perc_has_subunit_poverty :.1f}% households that are doubling up have at least one subunit in poverty.. ") 
 
-    # First, compute normalized weights that approximate the total # of households in the US the data represents
-    us_population = 323.4*(10**6)
-    ndata = weighted_len(data, "ASECWT") # total # of persons the ASEC dataset represents
-    norm = us_population / ndata # roughly 1.5 — normalization factor to convert ASEC estimates to US population estimates
+    # % households where doubling up has lifted at least one subunit out of poverty
+    lifted_subunit_poverty = [hh for hh in doubling_up if 
+        hh["spm_perc_partial"] >= 100 and # entire family above poverty
+        len([subunit for subunit in hh["subunits"] if subunit["spm_perc_partial"]<100])>0]
+    perc_lifted_subunit_poverty = weighted_len(lifted_subunit_poverty, "ASECWTH")/weighted_len(has_subunit_poverty, "ASECWTH")*100 # 83.2% of those lifted the subunits out of poverty
+    log(f"Of those, in {perc_lifted_subunit_poverty :.0f}% of cases doubling up has lifted the subunits out of poverty")
+
+    # Number of people lifted out of poverty by doubling up
+    poverty_separate_subunits = []
+    poverty_doubling_up = []
+    weights = []
     for hh in doubling_up:
-        hh["ASECWTH_norm"] = norm * hh["ASECWTH"]
+        for subunit in hh["subunits"]:
+            poverty_separate_subunits += [subunit["spm_perc_partial"]] * len(subunit["persons_spm"])
+            weights += [p["ASECWT"] for p in subunit["persons_spm"]]
+        poverty_doubling_up += [hh["spm_perc_partial"]] * len(hh["persons_spm"])
+    lifted = sum([w for i,w in enumerate(weights) if poverty_separate_subunits[i]<100 and poverty_doubling_up[i]>=100])
+    fallen = sum([w for i,w in enumerate(weights) if poverty_separate_subunits[i]>=100 and poverty_doubling_up[i]<100])
+    npers_lifted_poverty = lifted - fallen # 14.2 million
+    log(f"Overall, doubling up with family lifts approximately {npers_lifted_poverty/10**6 :.1f} million persons out of poverty.")
 
-    # Extract poverty level estimates for doubled up households and individual subunits
-    doubling_up_poverty = [hh["spm_perc_partial"] for hh in doubling_up]
-    weights_doubling_up = [hh["ASECWTH_norm"]/10**6 for hh in doubling_up] # measures in millions of households
-
-    subunits_poverty = []
-    weights_subunits = []
-    for hh in doubling_up:
-        hh_subunits = [subunit["spm_perc_partial"] for subunit in hh["subunits"]]
-        subunits_poverty += hh_subunits
-        weights_subunits += [hh["ASECWTH_norm"]/10**6] * len(hh_subunits) # measured in millions of households
-
-    # Visualize!
+        # 3. Visualize: Poverty level of persons living in separate family subunits vs. doubling up
+    weights = [w/10**6 for w in weights] # express in millions of people
     fig, ax = plt.subplots()
     bins = range(0,1001,100)
-    ax.hist(subunits_poverty, bins=bins, weights=weights_subunits)
-    ax.hist(doubling_up_poverty, bins=bins, weights=weights_doubling_up)
+    ax.hist(poverty_separate_subunits, bins=bins, weights=weights, fc=(0.13, 0.47, 0.71, 0.7))
+    ax.hist(poverty_doubling_up, bins=bins, weights=weights, fc=(1.0, 0.5, 0.05, 0.7))
     ax.set_xlabel("Percentage of poverty line")
     ax.xaxis.set_major_formatter(FormatStrFormatter('%d%%'))
-    ax.set_ylabel("Number of US households (millions)")
-    ax.legend(["Family sub-units living separately", "Families doubling up"])
-    ax.set_title("Poverty level of families doubling up vs. family sub-units living separately")
+    ax.set_ylabel("Number of US persons (millions)")
+    ax.legend(["Living separately", "Doubling up"])
+    ax.set_title("Poverty level persons would have if they lived in separate family subunits vs. doubling up")
 
 ### Family relationships
 
@@ -670,8 +685,28 @@ def print_household_profile(hh):
             f'{get_description("FAMREL",p["FAMREL"])}')
     # print("")
 
-# def print_detailed_household_profile(hh):
-
+def print_detailed_household_profile(hh):
+    unit_resources = [resource for resource in list(in_kind_benefits.keys()) + list(expenses.keys()) 
+            if resource not in ["SPMSNAP", "SPMMEDXPNS"]]
+    i = 1
+    for subunit in hh["subunits"]:
+        for p in subunit["persons_spm"]:
+            print(f'{i}. {get_description("RELATE",p["RELATE"])} - {p["AGE"]}; ' + 
+                f'{get_description("SEX",p["SEX"])}; ' + 
+                f'{get_description("MARST",p["MARST"])}; ' + 
+                f'Worked last year: {get_description("WORKLY", p["WORKLY"])}.')
+            if(p["AGE"]>=15):
+                print(f"\tIncome: { {income:p[income] for income in income_sources if p[income]!=0} }")
+            i+=1
+        print(f"Shared benefits/expenses: { {resource: subunit[resource] for resource in unit_resources if subunit[resource] != 0} }")
+        print(f"Total subunit resources: {subunit['SPMTOTRES_partial']}")
+        print(f"Subunit poverty level: {subunit['spm_perc_partial'] :.0f}%")
+        print()
+    print(f"Total family resources: {hh['SPMTOTRES_partial']}")
+    print(f"Family poverty level: {hh['spm_perc_partial'] :.0f}%")
+    print("------------------------------------------------ ")
+    print()
+    print()
 
 
 ###########
