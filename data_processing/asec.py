@@ -10,6 +10,44 @@ data_dictionary_compact = {} # Gets read in at the same time as the data in the 
 def get_description(field, code):
     return data_dictionary_compact[field][code]
 
+income_sources = {
+    "INCWAGE" : "Wage and salary income", 
+    "INCBUS" : "Non-farm business income", 
+    "INCFARM" : "Farm income", 
+    "INCSS" : "Social Security income", 
+    "INCWELFR" : "Welfare (public assistance) income", 
+    "INCRETIR" : "Retirement income", 
+    "INCSSI" : "Income from SSI", 
+    "INCINT" : "Income from interest", 
+    "INCUNEMP" : "Income from unemployment benefits", 
+    "INCWKCOM" : "Income from worker's compensation", 
+    "INCVET" : "Income from veteran's benefits", 
+    "INCSURV" : "Income from survivor's benefits", 
+    "INCDISAB" : "Income from disability benefits", 
+    "INCDIVID" : "Income from dividends", 
+    "INCRENT" : "Income from rent", 
+    "INCEDUC" : "Income from educational assistance", 
+    "INCCHILD" : "Income from child support", 
+    "INCASIST" : "Income from assistance", 
+    "INCOTHER" : "Income from other Source not specified"
+}
+in_kind_benefits = {
+    "SPMLUNCH" : "SPM unit's school lunch value", 
+    "SPMCAPHOUS" : "SPM unit's capped housing subsidy", 
+    "SPMWIC" : "SPM unit's WIC value", 
+    "SPMHEAT" : "SPM unit's energy subsidy", 
+    "SPMSNAP" : "SPM unit's SNAP subsidy",
+    "SPMEITC": 	"SPM unit's federal EITC",
+}
+expenses = {
+    "SPMMEDXPNS" : "SPM unit's medical out-of-pocket and Medicare B subsidy", 
+    "SPMCAPXPNS" : "SPM unit's capped work and child care expenses", 
+    "SPMCHSUP" : "SPM unit's child support paid", 
+    "SPMSTTAX" : "SPM unit's state tax", 
+    "SPMFEDTAXBC_2": "SPM unit's federal tax (before EITC)",
+    "SPMFICA" : "SPM unit's FICA and federal retirement"
+}
+
 def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="All"):
     # Load the data and data dictionary
     global data_dictionary_compact
@@ -24,17 +62,17 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
     
     # Convert int and float variables
     log("Converting int and float variables.. ")
-    int_vars = ["AGE", "UHRSWORKT", "UHRSWORKLY", "WKSWORK1", "PTWEEKS", "INCTOT", "INCWAGE", "INCBUS", "INCFARM"]
-    int_vars += ["LINENO", "ASPOUSE", "PECOHAB", "PELNMOM", "PELNDAD"]
-    int_vars += ["SPMNADULTS", "SPMNCHILD", "SPMNPERS"]
-    int_vars += ["INCSS", "INCWELFR", "INCRETIR", "INCSSI", "INCINT", "INCUNEMP", "INCWKCOM", 
-        "INCVET", "INCSURV", "INCDISAB", "INCDIVID", "INCRENT", "INCEDUC", "INCCHILD", "INCASIST", "INCOTHER"]
-    float_vars = ["SPMLUNCH", "SPMCAPHOUS", "SPMWIC", "SPMHEAT", "SPMSNAP", "SPMEITC", "SPMMEDXPNS", "SPMCAPXPNS", "SPMCHSUP", 
-    "SPMSTTAX", "SPMFEDTAXAC", "SPMFEDTAXBC","SPMFICA"]
-    float_vars += ["ASECWT", "SPMTOTRES", "SPMTHRESH"]
-    # Also convert the replicate weights
-    for rw in ["REPWT", "REPWTP"]:
-        float_vars += [rw+str(i) for i in range(1,161,1)]
+    int_vars = ["AGE", "UHRSWORKT", "UHRSWORKLY", "WKSWORK1", "PTWEEKS", # work variables
+        "LINENO", "ASPOUSE", "PECOHAB", "PELNMOM", "PELNDAD",   # family structure variables
+        "SPMNADULTS", "SPMNCHILD", "SPMNPERS", 
+        "INCTOT", "INCWAGE", "INCBUS", "INCFARM", "INCSS", "INCWELFR", "INCRETIR", "INCSSI", # income variables
+        "INCINT", "INCUNEMP", "INCWKCOM", "INCVET", "INCSURV", "INCDISAB", "INCDIVID", 
+        "INCRENT", "INCEDUC", "INCCHILD", "INCASIST", "INCOTHER"]
+    float_vars = ["SPMTOTRES", "SPMTHRESH",
+        "SPMLUNCH", "SPMCAPHOUS", "SPMWIC", "SPMHEAT", "SPMSNAP", "SPMEITC", # shared family benefits and expenses
+        "SPMMEDXPNS", "SPMCAPXPNS", "SPMWKXPNS", "SPMCHXPNS", "SPMCHSUP", "SPMSTTAX", "SPMFEDTAXAC", "SPMFEDTAXBC","SPMFICA",
+        "EITCRED", "STATAXAC", "FEDTAXAC", "FICA", "WKXPNS",
+        "ASECWTH", "ASECWT"] + ["REPWT"+str(i+1) for i in range(160)] + ["REPWTP"+str(i+1) for i in range(160)] # weights (including replicate weights)
     for int_var in int_vars:
         if int_var in data[0]: # If one of the variables we read
             for p in data:
@@ -56,13 +94,19 @@ def load_and_preprocess_asec_data(filepath_data, filepath_dictionary, fields="Al
     for p in data:
         p["INDLY"] = jobs_to_industries[p["OCCLY"]]
 
-
     # Annotate data with % of poverty line
     log("Annotating data with % of poverty line..")
     for p in data:
         p["spm_perc"] = p["SPMTOTRES"] / p["SPMTHRESH"] * 100
 
+    # 
+    correct_fed_tax(data)
+
     return data
+
+def correct_fed_tax(data):
+    for p in data:
+        p["SPMFEDTAXBC_2"] = float(p["SPMFEDTAXAC"]) + float(p["SPMEITC"])
 
 def explore_variable_work_schedule(data):    
     employed = [p for p in data if p["UHRSWORKT"]!=999] # 55,575
@@ -227,6 +271,8 @@ def explore_poverty_demographics(data):
     ax.invert_yaxis()
 
 def explore_housing_family_doubling_up(data):
+    log("Exploring the phenomenon of families doubling up.. ")
+
     # Bundle persons into households, and annotate the households with family subunits
     # A family subunit consists of a person + their spouse/unmarried partner (if any) + DEPENDENT children (if any)
     # Dependent children are defined as <21 years old who do NOT have their own family sub-unit
@@ -269,27 +315,29 @@ def explore_housing_family_doubling_up(data):
     explore_financial_impact_doubling_up(doubling_up)
 
 def bundle_persons_into_households(data):
-    # Create a dictionary of households, indexed by CPSID
+    log("Bunding persons into households..")
+    # Bundle persons into households
     cpsids = list(set([p["CPSID"] for p in data]))
     households = {cpsid: {"persons": []} for cpsid in cpsids}
     for p in data:
-        hh = households[p["CPSID"]]
-        hh["persons"].append(p)
-    # Convert to list (so I can compute weighted statistics over it)
-    households_list = []
-    for cpsid in cpsids:
-        hh = households[cpsid]
-        hh["CPSID"] = cpsid
-        households_list.append(hh)
-    households = households_list
-    # Annotate households with relevant info 
+        households[p["CPSID"]]["persons"].append(p)
+    # Convert to list so I can compute weighted statistics over it
+    households = list(households.values())
+    # Annotate households with relevant info (currently stored at person level)
+    log("Annotating households with relevant info currently stored at person level..")
+    relevant_fields = ["CPSID", "SPMFAMUNIT", # IDs
+        "SPMTOTRES", "SPMTHRESH", "spm_perc", "SPMNADULTS", "SPMNCHILD", "SPMNPERS", # poverty info
+        "SPMLUNCH", "SPMCAPHOUS", "SPMWIC", "SPMHEAT", "SPMSNAP", "SPMEITC", # shared household benefits
+        "SPMMEDXPNS", "SPMCAPXPNS", "SPMWKXPNS", "SPMCHXPNS", "SPMCHSUP", "SPMSTTAX", "SPMFEDTAXAC", "SPMFEDTAXBC_2", "SPMFICA", # shared household expenses
+        "ASECWTH"] + ["REPWT"+str(i+1) for i in range(160)] # household weights (including replicate weights)
     for hh in households:
+        # Copy over relevant fields from householder to entire household
         p0 = hh["persons"][0] # householder
-        hh["spm_perc"] = p0["spm_perc"] # poverty info
-        hh["SPMTHRESH"] = p0["SPMTHRESH"]
-        hh["ASECWTH"] = float(p0["ASECWTH"]) # weights
-        for i in range(1, 161, 1): # including replicate weights
-            hh["REPWT"+str(i)] = float(p0["REPWT"+str(i)])
+        for field in relevant_fields:
+            hh[field] = p0[field]
+        # Extract persons in the SPM unit (rather than entire household)
+        hh["persons_spm"] = [p for p in hh["persons"] if p["SPMFAMUNIT"] == hh["SPMFAMUNIT"]]
+    log("Bunding persons into households completed.")
     return households
 
 def annotate_households_with_family_subunits(households):
@@ -299,9 +347,9 @@ def annotate_households_with_family_subunits(households):
     # (spouse/unmarried partner or own children).
     # So mother+father+16yo is one unit, mother+father+16yo child+1yo grandchild is two units and the 
     # 16yo is considered an independent adult rather than a dependent child.
+    log("Annotating households with family subunits..")
     for hh in households:
-        p0 = hh["persons"][0] # householder
-        p_spm = [p for p in hh["persons"] if p["SPMFAMUNIT"] == p0["SPMFAMUNIT"]] # persons in the SPM unit
+        p_spm = hh["persons_spm"] # persons in the SPM unit
         p_spm = sorted(p_spm, key=lambda p: p["AGE"], reverse=True) # sort decreasing by age
         for p in p_spm: # to begin with, nobody is assigned to any subunit
             p["subunit"] = -1
@@ -321,6 +369,7 @@ def annotate_households_with_family_subunits(households):
         # Anybody at this point with subunit -1 are "dependents" who haven't been allocated to a subunit yet
         # because they don't have a parent in the house.
         # If the householder is one of them (e.g. a 18yo living with friends), allocate them to their own subunit.
+        p0 = hh["persons"][0]
         if p0["subunit"] == -1:
             n_subunits += 1
             p0["subunit"] = n_subunits
@@ -330,6 +379,7 @@ def annotate_households_with_family_subunits(households):
             if p["subunit"] == -1:
                 p["subunit"] = p0["subunit"]
         hh["n_subunits"] = n_subunits
+    log("Annotating households with family subunits completed.")
 
 def split_shared_resources_between_family_subunits(doubling_up):
     # In-kind benefits (such as housing subsidies) and expenses (such as state and federal taxes)
@@ -345,81 +395,84 @@ def split_shared_resources_between_family_subunits(doubling_up):
     # NOTE that SNAP benefits (food assistance) and medical expenses can never be split unambigously, 
     # so skip those.
 
-    unit_resources = [resource for resource in list(in_kind_benefits.keys()) + list(expenses.keys()) if resource not in ["SPMSNAP", "SPMMEDXPNS"]]
+    log("Splitting shared resources between subunits...")
+    unit_resources = [resource for resource in list(in_kind_benefits.keys()) + list(expenses.keys()) 
+        if resource not in ["SPMSNAP", "SPMMEDXPNS"]]
     for hh in doubling_up:
-        p0 = hh["persons"][0] # householder
-        persons = [p for p in hh["persons"] if p["SPMFAMUNIT"] == p0["SPMFAMUNIT"]] # persons in the SPM unit
+        persons = hh["persons_spm"] # persons in the SPM unit
         hh["subunits"] = []
-        for i in range(1, hh["n_subunits"]+1, 1): # for each subunit
-            p_subunit = [p for p in persons if p["subunit"] == i] # persons in the subunit
-            hh["subunits"].append({
-                "persons": p_subunit,
-                "resources": {resource: 0 for resource in unit_resources}
-            })
-        hh["ambiguous"] = {resource: False for resource in unit_resources}
+        for i in range(hh["n_subunits"]): # for each subunit
+            subunit = {}
+            subunit["persons_spm"] = [p for p in persons if p["subunit"] == i+1] # persons in the subunit
+            subunit.update({resource: 0 for resource in unit_resources}) # initialize all subunit resources to 0
+            hh["subunits"].append(subunit)
+        hh["ambiguous"] = {resource: False for resource in unit_resources} # initialize all resources as "not ambiguous"
         ### Taxes (EITC, State, Federal, FICA) for each subunit can be calculated from values for each person in the subunit 
         for subunit in hh["subunits"]:
-            subunit["resources"]["SPMEITC"] = sum([float(p["EITCRED"]) for p in subunit["persons"] if p["AGE"]>=15]) # EITC
-            subunit["resources"]["SPMSTTAX"] = sum([float(p["STATAXAC"]) for p in subunit["persons"] if p["AGE"]>=15]) # State
-            subunit["resources"]["SPMFEDTAXBC_2"] = sum([float(p["FEDTAXAC"])+float(p["EITCRED"]) for p in subunit["persons"]  if p["AGE"]>=15]) # Federal
-        # FICA (Social Security) has a few data issues (<<1% of datapoints seem to have inconsistent individual/total FICA)
-        # Will need to mark those as "ambiguous"
-        if abs(p0["SPMFICA"] - sum([float(p["FICA"]) for p in persons if p["AGE"]>=15]))<10:
-            for subunit in hh["subunits"]:
-                subunit["resources"]["SPMFICA"] = sum([float(p["FICA"]) for p in subunit["persons"] if p["AGE"]>=15])
-        else:
+            over15 = [p for p in subunit["persons_spm"] if p["AGE"]>=15]
+            subunit["SPMEITC"] = sum([p["EITCRED"] for p in over15]) # EITC
+            subunit["SPMSTTAX"] = sum([p["STATAXAC"] for p in over15]) # State
+            subunit["SPMFEDTAXBC_2"] = sum([p["FEDTAXAC"]+p["EITCRED"] for p in over15]) # Federal
+        # FICA (Social Security) has a few data issues (for <<1% of datapoints the individual FICA values don't sum up to the
+        # total household FICA value). Will need to mark those as "ambiguous"
+        if abs(hh["SPMFICA"] - sum([p["FICA"] for p in persons if p["AGE"]>=15]))>10:
             hh["ambiguous"]["SPMFICA"] = True
+        else:
+            for subunit in hh["subunits"]:
+                subunit["SPMFICA"] = sum([p["FICA"] for p in subunit["persons_spm"] if p["AGE"]>=15])            
         ### Housing and Energy subsidies: Always allocate them to the householer's subunit
+        p0 = hh["persons_spm"][0] # householder
         s0 = hh["subunits"][p0["subunit"]-1] # householder's subunit
-        s0["resources"]["SPMCAPHOUS"] = p0["SPMCAPHOUS"] # Housing
-        s0["resources"]["SPMHEAT"] = p0["SPMHEAT"] # Energy
+        s0["SPMCAPHOUS"] = hh["SPMCAPHOUS"] # Housing
+        s0["SPMHEAT"] = hh["SPMHEAT"] # Energy
         ### Other benefits/expenses will have to be allocated manually in non-ambiguous situations
         # i.e. situations where only one subunit fulfills the condition for getting that benefit/expense.
         ### School lunch
-        if p0["SPMLUNCH"]>0:
+        if hh["SPMLUNCH"]>0:
             subunit_school_lunch = [subunit for subunit in hh["subunits"] if  # Subunits with children 5-18yo
-                len([p for p in subunit["persons"] if p["AGE"]>=5 and p["AGE"]<=18])>0]
+                len([p for p in subunit["persons_spm"] if p["AGE"]>=5 and p["AGE"]<=18])>0]
             if len(subunit_school_lunch) == 1: # If only one candidate subunit
-                subunit_school_lunch[0]["resources"]["SPMLUNCH"] = p0["SPMLUNCH"] # Allocate the benefit to this subunit
+                subunit_school_lunch[0]["SPMLUNCH"] = hh["SPMLUNCH"] # Allocate the benefit to this subunit
             else: # Otherwise it's ambiguous how to split this benefit
                 hh["ambiguous"]["SPMLUNCH"] = True # 8% ambiguous (127 out of 1542)
         ### WIC
-        if p0["SPMWIC"]>0:
+        if hh["SPMWIC"]>0:
             subunit_wic = [subunit for subunit in hh["subunits"] if  # Subunits where at least on person is getting WIC
-                len([p for p in subunit["persons"] if p["GOTWIC"]=="2"])>0]
+                len([p for p in subunit["persons_spm"] if p["GOTWIC"]=="2"])>0]
             if len(subunit_wic) == 1: # If only one subunit is getting WIC
-                subunit_wic[0]["resources"]["SPMWIC"] = p0["SPMWIC"] # Allocate the benefit to this subunit
+                subunit_wic[0]["SPMWIC"] = hh["SPMWIC"] # Allocate the benefit to this subunit
             else: # Otherwise it's ambiguous how to split this benefit
                 hh["ambiguous"]["SPMWIC"] = True # 5% ambiguous (15 out of 294)
         ### Work + childcare expenses
-        if p0["SPMCAPXPNS"]>0:
+        if hh["SPMCAPXPNS"]>0:
             # Check if the expenses split correctly between work and childcare
-            if abs(p0["SPMCAPXPNS"] - float(p0["SPMWKXPNS"]) - float(p0["SPMCHXPNS"]))>10:
+            if abs(hh["SPMCAPXPNS"] - hh["SPMWKXPNS"] - hh["SPMCHXPNS"])>10:
                 hh["ambiguous"]["SPMCAPXPNS"] = True # 1% ambiguous (85 out of 6654)
             else:
-                if float(p0["SPMCHXPNS"])>0: # If there are any childcare expenses
+                if hh["SPMCHXPNS"]>0: # If there are any childcare expenses
                     subunit_childcare = [subunit for subunit in hh["subunits"] if  # Subunits with at least ..
-                        len([p for p in subunit["persons"] if p["WORKLY"]=="2"])>0 and # .. one working adult and 
-                        len([p for p in subunit["persons"] if p["AGE"]<18])>0] # .. one child
+                        len([p for p in subunit["persons_spm"] if p["WORKLY"]=="2"])>0 and # .. one working adult and 
+                        len([p for p in subunit["persons_spm"] if p["AGE"]<18])>0] # .. one child
                     if len(subunit_childcare) == 1: # If only one candidate subunit
-                        subunit_childcare[0]["resources"]["SPMCAPXPNS"] = float(p0["SPMCHXPNS"]) # Allocate the expense to this subunit
+                        subunit_childcare[0]["SPMCAPXPNS"] = hh["SPMCHXPNS"] # Allocate the expense to this subunit
                     else: # Otherwise it's ambiguous how to split this expense
                         hh["ambiguous"]["SPMCAPXPNS"] = True # (25 out of 308)
                 if not hh["ambiguous"]["SPMCAPXPNS"]: # If the childcare expenses aren't ambiguous
                     # Also split the work expenses
                     for subunit in hh["subunits"]:
-                        subunit["resources"]["SPMCAPXPNS"] += sum([float(p["WKXPNS"]) for p in subunit["persons"] if p["WKXPNS"] != "9999"])
+                        subunit["SPMCAPXPNS"] += sum([p["WKXPNS"] for p in subunit["persons_spm"] if p["WKXPNS"] != 9999])
         ### Child support
         # No info on who might be paying child support, so all households with child support are ambiguous
-        if p0["SPMCHSUP"]>0:
+        if hh["SPMCHSUP"]>0:
             hh["ambiguous"]["SPMCHSUP"] = True # 100% (111 out of 111)
 
     # Sanity check that subunit resources sum up to total unit resources
+    log("Sanity checking that subunit resources sum up to total unit resources.. ")
     for hh in doubling_up:
         for resource in unit_resources:
             if not hh["ambiguous"][resource]:
-                total_resource = sum([subunit["resources"][resource] for subunit in hh["subunits"]])
-                assert(abs(total_resource - hh["persons"][0][resource])<10)
+                total_resource = sum([subunit[resource] for subunit in hh["subunits"]])
+                assert(abs(total_resource - hh[resource])<10)
 
     # Check how many households I marked as "ambiguous"
     n_ambiguous = len([hh for hh in doubling_up if sum(hh["ambiguous"].values())>0])
@@ -437,41 +490,46 @@ def explore_financial_impact_doubling_up(doubling_up):
     # into account in its calculations of poverty levels (departure from standard estimates), as well as discards
     # approximately 5% other households where the resources cannot be ambiguously allocated to subunits.
     
+    log("Exploring financial impact of doubling up..")
+
     # Split shared resources between family subunits
     split_shared_resources_between_family_subunits(doubling_up)
 
     # Filter out ambiguous cases (~5% of households)
+    log("Filtering out ambiguous cases.. ")
     doubling_up = [hh for hh in doubling_up if sum(hh["ambiguous"].values())==0]
 
     # Calculate resources and poverty level EXCLUDING a) SNAP benefits and b) medical expenses
+    log("Calculate resources and poverty level EXCLUDING a) SNAP benefits and b) medical expenses.. ")
     for hh in doubling_up:
-        p0 = hh["persons"][0]
         # Run calculations for entire SPM unit...
-        hh["SPMTOTRES_partial"] = p0["SPMTOTRES"] - (p0["SPMSNAP"]-p0["SPMMEDXPNS"]) # Exclude SNAP benefits and medical expenses
-        hh["spm_perc_partial"] = hh["SPMTOTRES_partial"] / p0["SPMTHRESH"] * 100
+        hh["SPMTOTRES_partial"] = hh["SPMTOTRES"] - (hh["SPMSNAP"] - hh["SPMMEDXPNS"]) # Exclude SNAP benefits and medical expenses
+        hh["spm_perc_partial"] = hh["SPMTOTRES_partial"] / hh["SPMTHRESH"] * 100
         # ... as well as each individual subunit 
         for subunit in hh["subunits"]:
             subunit_resources_partial = 0
             # Add incomes
-            for p in subunit["persons"]:
+            for p in subunit["persons_spm"]:
                 if p["AGE"] >= 15:
                     for income in income_sources:
                         subunit_resources_partial += p[income]
             # Add benefits (except SNAP)
             for benefit in set(in_kind_benefits) - set(["SPMSNAP"]):
-                subunit_resources_partial += subunit["resources"][benefit]
+                subunit_resources_partial += subunit[benefit]
             # Substract expenses (except medical)
             for expense in set(expenses) - set(["SPMMEDXPNS"]):
-                subunit_resources_partial -= subunit["resources"][expense]
+                subunit_resources_partial -= subunit[expense]
             subunit["SPMTOTRES_partial"] = subunit_resources_partial
             # Also calculate the subunit threshhold
-            adults = [p for p in subunit["persons"] if p["AGE"]>=18 or p["RELATE"] in ["101", "201"]]
+            adults = [p for p in subunit["persons_spm"] if p["AGE"]>=18 or p["RELATE"] in ["101", "201"]]
             nadults = len(adults)
-            nchild = len(subunit["persons"]) - nadults
-            subunit["SPMTHRESH"] = p0["SPMTHRESH"] / SPM_family_scaling(p0["SPMNADULTS"], p0["SPMNCHILD"]) * SPM_family_scaling(nadults, nchild)
+            nchild = len(subunit["persons_spm"]) - nadults
+            # Undo whole family scaling factor and multiply with subunit scaling factor
+            subunit["SPMTHRESH"] = hh["SPMTHRESH"] / SPM_family_scaling(hh["SPMNADULTS"], hh["SPMNCHILD"]) * SPM_family_scaling(nadults, nchild)
             subunit["spm_perc_partial"] = subunit["SPMTOTRES_partial"] / subunit["SPMTHRESH"] * 100
 
     # 3. Visualize: Poverty level of doubled-up families vs. individual family subunits
+    log("Visualize: Poverty level of doubled-up families vs. individual family subunits.. ")
 
     # First, compute normalized weights that approximate the total # of households in the US the data represents
     us_population = 323.4*(10**6)
@@ -502,7 +560,6 @@ def explore_financial_impact_doubling_up(doubling_up):
     ax.legend(["Family sub-units living separately", "Families doubling up"])
     ax.set_title("Poverty level of families doubling up vs. family sub-units living separately")
 
-
 ### Family relationships
 
 def get_parents(p, hh):
@@ -525,20 +582,7 @@ def is_independent_adult(p, hh):
     # (i.e. a spouse/cohabiting unmarried partner and/or children)
     return (p["AGE"] >= 21) or (get_partner(p, hh) != None) or (len(get_children(p, hh))>0)
 
-def print_household_profile(cpsid):
-    hh = [p for p in data if p["CPSID"] == cpsid]
-    for (i, p) in enumerate(hh):
-        print(f'{i}. {get_description("RELATE",p["RELATE"])} - {p["AGE"]}; ' + 
-            f'{get_description("SEX",p["SEX"])}; ' + 
-            f'{get_description("MARST",p["MARST"])}; ' + 
-            f'{get_description("EMPSTAT",p["EMPSTAT"])}; ' + 
-            f'{get_description("FTYPE",p["FTYPE"])}; ' + 
-            f'{get_description("FAMREL",p["FAMREL"])}')
-    # print("")
-
 ### SPM Units
-
-# Poverty threshholds
 
 def SPM_family_scaling(nadults, nchildren): # Family scaling factor
     if (nadults==1 and nchildren==0): # 1 adult
@@ -588,55 +632,10 @@ def sanity_check_spmthresholds(data, households):
         nchild = npers - nadults
         if not ((npers == p0["SPMNPERS"]) and (p0["SPMNPERS"] == p0["SPMNADULTS"] + p0["SPMNCHILD"]) and (nadults == p0["SPMNADULTS"]) and (nchild == p0["SPMNCHILD"])):
             print(i)
-            print_household_profile(p0["CPSID"])
+            print_household_profile(hh)
             print()
 
-# Family resources
-
-income_sources = {
-    "INCWAGE" : "Wage and salary income", 
-    "INCBUS" : "Non-farm business income", 
-    "INCFARM" : "Farm income", 
-    "INCSS" : "Social Security income", 
-    "INCWELFR" : "Welfare (public assistance) income", 
-    "INCRETIR" : "Retirement income", 
-    "INCSSI" : "Income from SSI", 
-    "INCINT" : "Income from interest", 
-    "INCUNEMP" : "Income from unemployment benefits", 
-    "INCWKCOM" : "Income from worker's compensation", 
-    "INCVET" : "Income from veteran's benefits", 
-    "INCSURV" : "Income from survivor's benefits", 
-    "INCDISAB" : "Income from disability benefits", 
-    "INCDIVID" : "Income from dividends", 
-    "INCRENT" : "Income from rent", 
-    "INCEDUC" : "Income from educational assistance", 
-    "INCCHILD" : "Income from child support", 
-    "INCASIST" : "Income from assistance", 
-    "INCOTHER" : "Income from other Source not specified"
-}
-in_kind_benefits = {
-    "SPMLUNCH" : "SPM unit's school lunch value", 
-    "SPMCAPHOUS" : "SPM unit's capped housing subsidy", 
-    "SPMWIC" : "SPM unit's WIC value", 
-    "SPMHEAT" : "SPM unit's energy subsidy", 
-    "SPMSNAP" : "SPM unit's SNAP subsidy",
-    "SPMEITC": 	"SPM unit's federal EITC",
-}
-expenses = {
-    "SPMMEDXPNS" : "SPM unit's medical out-of-pocket and Medicare B subsidy", 
-    "SPMCAPXPNS" : "SPM unit's capped work and child care expenses", 
-    "SPMCHSUP" : "SPM unit's child support paid", 
-    "SPMSTTAX" : "SPM unit's state tax", 
-    "SPMFEDTAXBC_2": "SPM unit's federal tax (before EITC)",
-    "SPMFICA" : "SPM unit's FICA and federal retirement"
-}
-
-def correct_fed_tax(data):
-    for p in data:
-        p["SPMFEDTAXBC_2"] = float(p["SPMFEDTAXAC"]) + float(p["SPMEITC"])
-
 def sanity_check_family_resources(data, households):
-    correct_fed_tax(data)
     log("Total family resource estimates that are off by >$10: ...")
     for hh in households:
         p0 = hh["persons"][0]
@@ -658,6 +657,21 @@ def sanity_check_family_resources(data, households):
             print(f"(CPSID: {hh['CPSID']}) {round(total_resources - p0['SPMTOTRES'],2)}")
     # Only 5 households have family resource estimates off by >$10, and they are all off by 
     # about $50. I can't figure out why, but I'm OK with that level of error
+
+### Family profiles
+
+def print_household_profile(hh):
+    for (i, p) in enumerate(hh["persons"]):
+        print(f'{i}. {get_description("RELATE",p["RELATE"])} - {p["AGE"]}; ' + 
+            f'{get_description("SEX",p["SEX"])}; ' + 
+            f'{get_description("MARST",p["MARST"])}; ' + 
+            f'{get_description("EMPSTAT",p["EMPSTAT"])}; ' + 
+            f'{get_description("FTYPE",p["FTYPE"])}; ' + 
+            f'{get_description("FAMREL",p["FAMREL"])}')
+    # print("")
+
+# def print_detailed_household_profile(hh):
+
 
 
 ###########
