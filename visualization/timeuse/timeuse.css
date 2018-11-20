@@ -1,0 +1,204 @@
+body {
+  margin-top: 0px;  
+}
+
+#header {
+  width: 1100px;
+  height: 250px; 
+  background-color: #FFF;
+  position: fixed;
+  z-index: 5;
+}
+
+#visualization_container {
+  padding-top: 250px;
+  width: 1100px;
+}
+
+
+/* filter buttons */
+.filter {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.filter_button input {
+  display: none;
+}
+
+.filter_button label {
+  display: block;
+  width: 95px;
+  margin: 1px; 
+  padding-left: 5px;
+  line-height: 18px; 
+  font-size: 0.65em;
+  border: 1px solid #dcdcdc;
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.filter_button label:hover {
+  text-decoration: underline;
+}
+
+.filter_button input:checked + label {
+  background-color: #fff;
+  border-color: #aaa;
+  color: #000;
+  font-weight: bold;
+}
+
+#n_persons_div {
+  font-size: 0.75em;
+}
+
+
+#activities_dropdown {
+  margin-bottom: 5px;
+}
+
+/* toggle visualizations buttons */
+#toggle_visualization {
+  display: block;
+  width: 200px;
+  margin-left: 210px;
+}
+
+.choose_visualization_button {
+  display: inline;
+}
+
+.choose_visualization_button input {
+  display: none;
+}
+
+.choose_visualization_button label {
+  display: inline-block;
+  width: 95px;
+  line-height: 18px; 
+  font-size: 0.65em;
+  text-align: center;
+  border: 1px solid #dcdcdc;
+  background-color: #f0f0f0;
+  color: #555;
+}
+
+.choose_visualization_button label:hover {
+  text-decoration: underline;
+}
+
+.choose_visualization_button input:checked + label {
+  background-color: #fff;
+  border-color: #aaa;
+  color: #000;
+  font-weight: bold;
+}
+
+
+/* summary visualization */
+#summary_visualization {
+  padding-left: 20px;
+}
+
+#percentage_axis_svg {
+  width: 1080px;
+  height: 20px;
+  position: fixed;
+  background-color: #FFF;
+}
+
+#activities_div {
+  padding-top: 23px;
+}
+
+.activity {
+  line-height: 0px;
+}
+
+.activity_bar, .activity_bar_label {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.activity_bar {
+  border-radius: 3px;
+}
+
+.activity_bar_label {
+  margin-left: 5px;
+}
+
+/* individuals visualization */
+.timeline_div,
+.timeline_svg {
+  width: 1000px;
+  height: 275px;
+}
+
+.timeline_div {
+  position: relative;
+  margin: 20px;
+}
+
+.timeline_svg {
+  position: absolute;
+  top: 0px;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
+  background-color: #fafafa;
+}
+
+.infobox {
+  position: absolute;
+  top: 0px;
+  margin: 10px;
+  z-index: 2;
+}
+
+.serialno {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  margin: 10px;
+  z-index: 2;
+}
+
+.timeline_div * {
+  font-size: 0.85em;
+}
+
+.description {
+  font-weight: bold;
+}
+
+.value {
+  text-transform: capitalize;
+}
+
+.axis path {
+  fill: none;
+  stroke: #aaa;
+  stroke-width: 1px;
+}
+
+.tick line {
+  fill: none;
+  stroke: #aaa;
+}
+
+.tick text {
+  font-size: 0.8em;
+}
+
+#show_more {
+  width: 300px;
+  height: 20px; 
+  margin: auto;
+  padding-top: 5px; 
+  border: 1px solid #dcdcdc;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  text-align: center;
+  font-size: 0.8em;
+}
