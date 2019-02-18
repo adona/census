@@ -1,12 +1,10 @@
 * {
 	box-sizing: border-box;	
-/* 	border: 1px solid #f9f9f9; */
-
 	/* 	CSS variables */
-	--occp-list-width: 200px;
+	--categories-list-width: 200px;
 	--selected-color: #5cbfbf;
 	--mouseover-color: #bf755c;
-	--faded-color: hsl(180, 40%, 80%);
+	--background-color: hsl(180, 40%, 80%);
 }
 
 body {
@@ -18,7 +16,7 @@ body {
 /* ------------  Header ------------  */
 #header {
 	margin-top: 30px;	
-	width: calc(100% - var(--occp-list-width));
+	width: calc(100% - var(--categories-list-width));
 }
 
 #title h1 {
@@ -56,10 +54,10 @@ body {
 	margin: 10px 0px 40px;
 }
 
-/* Occupations list */
-#occupations-list {
+/* Occupation categories list */
+#categories-list {
 	display: inline-block;
-	width: var(--occp-list-width);
+	width: var(--categories-list-width);
 	max-height: calc(100% - 100px);
 	position: absolute;
 	top: 50%;
@@ -67,11 +65,11 @@ body {
 	overflow: hidden;
 }
 
-#categories {
+#scroll-container {
 	overflow: hidden;	
 }
 
-#categories:hover {
+#scroll-container:hover {
 	overflow-y: auto;
 }
 
@@ -89,7 +87,7 @@ body {
 
 .category-label {
 	padding: 0.3rem 0 0.3rem 1rem;
-	max-width: calc(var(--occp-list-width) - 1rem);
+	max-width: calc(var(--categories-list-width) - 1rem);
 	font-size: 0.6875rem;
 	font-weight: 500;
 	overflow: hidden;
@@ -106,7 +104,7 @@ body {
 #chart {
 	position: relative;
 	display: inline-block;
-	width: calc(100% - var(--occp-list-width) - 5px);
+	width: calc(100% - var(--categories-list-width) - 5px);
 	height: 100%;
 }
 
@@ -149,8 +147,8 @@ circle[state=mouseover] {
 	fill: var(--mouseover-color);
 }
 
-circle[state=faded] {
-	fill: var(--faded-color);
+circle[state=background] {
+	fill: var(--background-color);
 }
 
 #infobox {
