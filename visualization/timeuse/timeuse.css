@@ -1,179 +1,210 @@
-body {
-  margin-top: 0px;  
+* {
+  box-sizing: border-box;
+
+  /* CSS variables */
+  --body-width: 900px;
+  --filters-bar-width: 690px;
+  --timeline-container-height: 55px;
+  --filter-checked-color: #247BA0;
+  --searchbox-input-height: 20px;
 }
+
+body {
+  width: var(--body-width);
+  margin: 0px auto;
+  overflow-y: scroll;
+  font-family: Georgia;
+}
+
+/* Header */
 
 #header {
-  width: 1100px;
-  height: 250px; 
-  background-color: #FFF;
   position: fixed;
-  z-index: 5;
+  top: 0;
+  width: var(--body-width);
+  background: white;
+  z-index: 1;
 }
 
-#visualization_container {
-  padding-top: 250px;
-  width: 1100px;
+#title {
+  margin: 20px 0px 15px;
 }
 
+#title h1 {
+  margin: 0px;
+	text-align: left;
+	font-size: 42px;
+}
 
-/* filter buttons */
+#description {
+  width: var(--filters-bar-width);
+	margin-bottom: 15px;
+}
+
+#description p {
+  text-align: left;
+	line-height: 20px;
+	font-size: 14px;
+}
+
+#description a {
+	color: #217ce3;
+	text-decoration: none;
+}
+
+#n-results {
+  margin-bottom: 15px;
+  font-size: 16px;
+  /* font-weight: bold; */
+}
+
+/* Filters */
+
+#filters-bar {
+  width: var(--filters-bar-width);
+  margin-bottom: 20px;
+}
+
 .filter {
   display: inline-block;
   vertical-align: top;
+  margin-bottom: 10px;
 }
 
-.filter_button input {
+.filters-row[row-number="1"] .filter {
+  margin-right: 43px;
+}
+
+.filters-row[row-number="2"] .filter {
+  margin-right: 25px;
+}
+
+.filters-row .filter:last-child {
+  margin-right: 0px;
+}
+
+.filter-name {
+  padding-left: 1px;
+  padding-bottom: 3px;
+  font-size: 12px;
+  color: #000;
+}
+
+.filter-option {
+  display: inline-block;
+}
+
+.filter-option input {
   display: none;
 }
 
-.filter_button label {
-  display: block;
-  width: 95px;
-  margin: 1px; 
-  padding-left: 5px;
-  line-height: 18px; 
-  font-size: 0.65em;
-  border: 1px solid #dcdcdc;
-  background-color: #f0f0f0;
-  color: #555;
-}
-
-.filter_button label:hover {
-  text-decoration: underline;
-}
-
-.filter_button input:checked + label {
-  background-color: #fff;
-  border-color: #aaa;
+.filter-option label {
+  padding: 3px 7px;
+  font-size: 12px;
   color: #000;
-  font-weight: bold;
+  border: solid lightgrey 1px;
 }
 
-#n_persons_div {
-  font-size: 0.75em;
+.filter-option:first-child label {
+  border-top-left-radius: 3px;
+  border-bottom-left-radius: 3px;
+}
+
+.filter-option:last-child label {
+  border-top-right-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+.filter-option input:checked + label {
+  background: #F5F5F5;
+  border-color: var(--filter-checked-color);
+  color: var(--filter-checked-color);
+}
+
+/* Activities search box */
+
+#activities-searchbox {
+  position: relative;
+  margin-top: 10px;
+  width: calc(var(--filters-bar-width) - 5px); /* I don't understand why the 5px adjustment is necessary, but it is. */
+}
+
+#activities-searchbox input {
+  width: 100%;
+  height: var(--searchbox-input-height);
+  padding: 3px 7px;
+  font-size: 12px;
+  font-style: italic;
+}
+
+#activities-searchbox .suggestions-box {
+  position: absolute;
+  top: var(--searchbox-input-height);
+  width: calc(var(--filters-bar-width) - 5px);
+  height: 200px;
+  overflow-y: scroll;
+  border: 1px solid #ccc;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: white;
+  z-index: 2;
+}
+
+.suggestions-box li {
+  padding: 3px 6px;
+  font-size: 12px;
+}
+
+.suggestions-box li.selected {
+	border: 1px solid #999999;
+	background: #fafafa;
 }
 
 
-#activities_dropdown {
+/* Timelines */
+
+#timelines-list {
+  width: var(--central-column-width);
+}
+
+.timeline-container {
+  position: relative;
+  height: var(--timeline-container-height);
+  width: 100%;
   margin-bottom: 5px;
 }
 
-/* toggle visualizations buttons */
-#toggle_visualization {
-  display: block;
-  width: 200px;
-  margin-left: 210px;
-}
-
-.choose_visualization_button {
-  display: inline;
-}
-
-.choose_visualization_button input {
-  display: none;
-}
-
-.choose_visualization_button label {
-  display: inline-block;
-  width: 95px;
-  line-height: 18px; 
-  font-size: 0.65em;
-  text-align: center;
-  border: 1px solid #dcdcdc;
-  background-color: #f0f0f0;
-  color: #555;
-}
-
-.choose_visualization_button label:hover {
-  text-decoration: underline;
-}
-
-.choose_visualization_button input:checked + label {
-  background-color: #fff;
-  border-color: #aaa;
-  color: #000;
-  font-weight: bold;
-}
-
-
-/* summary visualization */
-#summary_visualization {
-  padding-left: 20px;
-}
-
-#percentage_axis_svg {
-  width: 1080px;
-  height: 20px;
-  position: fixed;
-  background-color: #FFF;
-}
-
-#activities_div {
-  padding-top: 23px;
-}
-
-.activity {
-  line-height: 0px;
-}
-
-.activity_bar, .activity_bar_label {
-  display: inline-block;
-  vertical-align: bottom;
-}
-
-.activity_bar {
-  border-radius: 3px;
-}
-
-.activity_bar_label {
-  margin-left: 5px;
-}
-
-/* individuals visualization */
-.timeline_div,
-.timeline_svg {
-  width: 1000px;
-  height: 275px;
-}
-
-.timeline_div {
+.annotations {
   position: relative;
-  margin: 20px;
+  height: 15px;
+  font-size: 12px;
 }
 
-.timeline_svg {
+.demographics {
+  display: inline-block;
+  width: calc(100% - 103px);
+}
+
+.day {
+  display: inline-block;
+  width: 100px;
+  text-align: right;
+}
+
+.timeline {
   position: absolute;
   top: 0px;
-  border: 1px solid #dcdcdc;
-  border-radius: 10px;
-  background-color: #fafafa;
+  width: 100%;
+  height: var(--timeline-container-height);
 }
 
-.infobox {
+.activity-label {
   position: absolute;
   top: 0px;
-  margin: 10px;
-  z-index: 2;
-}
-
-.serialno {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  margin: 10px;
-  z-index: 2;
-}
-
-.timeline_div * {
-  font-size: 0.85em;
-}
-
-.description {
-  font-weight: bold;
-}
-
-.value {
-  text-transform: capitalize;
+  padding: 0px 5px;
+  background: white;
+  border-radius: 3px;
 }
 
 .axis path {
@@ -188,17 +219,5 @@ body {
 }
 
 .tick text {
-  font-size: 0.8em;
-}
-
-#show_more {
-  width: 300px;
-  height: 20px; 
-  margin: auto;
-  padding-top: 5px; 
-  border: 1px solid #dcdcdc;
-  background-color: #f0f0f0;
-  border-radius: 15px;
-  text-align: center;
   font-size: 0.8em;
 }
