@@ -137,7 +137,7 @@ body {
   font-style: italic;
 }
 
-#activities-searchbox .suggestions-box {
+.suggestions-box {
   position: absolute;
   top: var(--searchbox-input-height);
   width: calc(var(--filters-bar-width) - 5px);
@@ -151,8 +151,13 @@ body {
   z-index: 2;
 }
 
-.suggestions-box li {
+.suggestion-category {
   padding: 3px 6px;
+  font-size: 14px;
+}
+
+.suggestion-activity {
+  padding: 3px 12px;
   font-size: 12px;
 }
 

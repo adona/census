@@ -79,7 +79,7 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 };
 
 
-var persons, activities;
+var persons, activities_by_category;
 
 var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small.json";
 d3.json(url_data, function(d) { // Load the data
@@ -99,22 +99,24 @@ function preprocess_data() {
 }
 
 function preprocess_activities() {
-  var activities_by_category = {};
+  var activities_by_category_dict = {};
   for (var i=0; i<persons.length; i++) {
     var p_activities = persons[i]["activities"];
     for (var j=0; j<p_activities.length; j++) {
       var activity = p_activities[j];
       var category = activity["CATEGORY"];
-      if (!(category in activities_by_category))
-        activities_by_category[category] = new Set();
-      activities_by_category[category].add(activity["ACTIVITY2"]);
+      if (!(category in activities_by_category_dict))
+        activities_by_category_dict[category] = new Set();
+      activities_by_category_dict[category].add(activity["ACTIVITY2"]);
     }
   }
 
-  activities = [];
-  for (var category in activities_by_category)
-    activities = activities.concat(
-      Array.from(activities_by_category[category]).sort());
+  activities_by_category = [];
+  for (var category in activities_by_category_dict)
+    activities_by_category.push({
+      "category": category,
+      "activities": Array.from(activities_by_category_dict[category]).sort()
+    });
 }
 
 function preprocess_timeline(person) {
@@ -222,7 +224,7 @@ function initialize_searchbox() {
   });
   
   var suggestions_box, 
-    filtered_suggestions, 
+    filtered_activities_by_category, filtered_activities, 
     idx_selected;
 
   function show_suggestions_box() {
@@ -241,22 +243,55 @@ function initialize_searchbox() {
 
   function filter_suggestions() {
     query = input.node().value;
-    filtered_suggestions = activities.filter(suggestion => 
-        suggestion.toLowerCase().search(query.toLowerCase()) != -1);
+    if (query == "") {
+      filtered_activities_by_category = activities_by_category;
+    } else {
+      filtered_activities_by_category = [];
+      for (var i=0; i<activities_by_category.length; i++) {
+        var category = activities_by_category[i];
+        var filtered_category_activities = category["activities"].filter(activity => 
+          activity.toLowerCase().search(query.toLowerCase()) != -1);
+        if (filtered_category_activities.length > 0)
+          filtered_activities_by_category.push({
+            "category": category["category"],
+            "activities": filtered_category_activities
+          });
+      }
+    }
+    filtered_activities = [];
+    for (var i=0; i<filtered_activities_by_category.length; i++)
+      filtered_activities = filtered_activities.concat(filtered_activities_by_category[i]["activities"]);
+
     update_suggestions();
   }
 
   function update_suggestions() {
-    suggestions_box.selectAll("li").remove();
+    suggestions_box.selectAll("*").remove();
     idx_selected = null;
-    var suggestions_divs = suggestions_box.selectAll("li")
-      .data(filtered_suggestions);
-    suggestions_divs.enter()
+
+    var category_divs = suggestions_box.selectAll("div")
+      .data(filtered_activities_by_category)
+      .enter()
+        .append("div");
+
+    category_divs
       .append("li")
-        .text(suggestion => suggestion)
-        .on("mouseover", (d, i) => update_selection(i))
-        .on("mouseout", () => update_selection(null))
-        .on("mousedown", completeSearch);
+      .attr("class", "suggestion-category")
+      .text(category => category["category"]);
+    
+    category_divs
+      .selectAll(".suggestion-activity")
+      .data(category => category["activities"])
+      .enter()
+        .append("li")
+        .attr("class", "suggestion-activity")
+        .text(activity => activity);
+
+    suggestions_box
+      .selectAll(".suggestion-activity")
+      .on("mouseover", (d, i) => update_selection(i))
+      .on("mouseout", () => update_selection(null))
+      .on("mousedown", completeSearch);
   }
 
   function update_selection_by_arrowpress(arrowPressed) {
@@ -264,16 +299,16 @@ function initialize_searchbox() {
     if (arrowPressed == "ArrowDown")
       new_idx = idx_selected == null? 0 : idx_selected+1;
     else 
-      new_idx = idx_selected == null? filtered_suggestions.length-1 : idx_selected-1;
+      new_idx = idx_selected == null? filtered_activities.length-1 : idx_selected-1;
     // Check that it's not out of bounds
-    if ((new_idx < 0) || (new_idx >= filtered_suggestions.length))
+    if ((new_idx < 0) || (new_idx >= filtered_activities.length))
       new_idx = null;
     // Update the selection
     update_selection(new_idx);
   }
 
   function update_selection(new_idx) {
-    var lis = suggestions_box.selectAll("li").nodes();
+    var lis = suggestions_box.selectAll(".suggestion-activity").nodes();
     if (idx_selected != null) 
       lis[idx_selected].classList.remove("selected");
     if(new_idx != null)
@@ -283,7 +318,7 @@ function initialize_searchbox() {
 
   function completeSearch() {
     if (idx_selected != null)
-      input.node().value = filtered_suggestions[idx_selected];
+      input.node().value = filtered_activities[idx_selected];
     input.node().blur();
   }
 
