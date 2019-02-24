@@ -6,7 +6,10 @@
   --filters-bar-width: 690px;
   --timeline-container-height: 55px;
   --filter-checked-color: #247BA0;
-  --searchbox-input-height: 20px;
+}
+
+::-webkit-input-placeholder {
+  font-style: italic;
 }
 
 body {
@@ -55,7 +58,6 @@ body {
 #n-results {
   margin-bottom: 15px;
   font-size: 16px;
-  /* font-weight: bold; */
 }
 
 /* Filters */
@@ -125,23 +127,22 @@ body {
 
 #activities-searchbox {
   position: relative;
-  margin-top: 10px;
   width: calc(var(--filters-bar-width) - 5px); /* I don't understand why the 5px adjustment is necessary, but it is. */
 }
 
 #activities-searchbox input {
   width: 100%;
-  height: var(--searchbox-input-height);
+  height: 20px;
   padding: 3px 7px;
   font-size: 12px;
-  font-style: italic;
+  border: solid lightgray 1px;
+  border-radius: 3px;
 }
 
 .suggestions-box {
   position: absolute;
-  top: var(--searchbox-input-height);
   width: calc(var(--filters-bar-width) - 5px);
-  height: 200px;
+  height: 300px;
   overflow-y: scroll;
   border: 1px solid #ccc;
   margin: 0;
@@ -162,8 +163,9 @@ body {
 }
 
 .suggestions-box li.selected {
-	border: 1px solid #999999;
-	background: #fafafa;
+  background: #F5F5F5;
+  border: solid var(--filter-checked-color) 1px;
+  color: var(--filter-checked-color);
 }
 
 

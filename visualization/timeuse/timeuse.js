@@ -55,7 +55,7 @@ const FILTER_MODELS =
    [FILTER_EDU, FILTER_EMPLOYMENT, FILTER_DAY]];
 const FILTERS_BAR = d3.select("#filters-bar");
 
-const SEARCHBOX_PLACEHOLDER = "e.g. Children, volunteering.. ";
+const SEARCHBOX_PLACEHOLDER = "e.g. Playing with children, volunteering.. ";
 
 const T_START = parse_time("04:00")
   T_STOP = add_one_day(T_START);
@@ -85,7 +85,6 @@ var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_smal
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 d3.json(url_data, function(d) { // Load the data
   persons = d; // Save to global variable (for easier debugging)
-  console.log("Data loaded!")
 
   d3.json(url_activities, function(d) { // Load the activities by category list
     activities_by_category = d; // Save to global variable (for easier debugging)
@@ -182,6 +181,10 @@ function initialize_searchbox() {
   var searchbox = FILTERS_BAR.append("div")
     .attr("id", "activities-searchbox");
 
+  searchbox.append("div")
+    .attr("class", "filter-name")
+    .text("Activity");
+
   var input = searchbox.append("input")
   .attr("type", "text")
   .attr("placeholder", SEARCHBOX_PLACEHOLDER)
@@ -200,6 +203,7 @@ function initialize_searchbox() {
         break;
       case "Enter":
       case "Tab":
+      case "Escape":
         completeSearch();
         break;
       default:
@@ -213,8 +217,10 @@ function initialize_searchbox() {
 
   function show_suggestions_box() {
     if (suggestions_box != null) return;
+    var suggestion_box_top = searchbox.node().getBoundingClientRect()["height"];
     suggestions_box = searchbox.append("ul")
-      .attr("class", "suggestions-box");
+      .attr("class", "suggestions-box")
+      .attr("style", "top: " + suggestion_box_top + "px;");
     filter_suggestions("");
   }
   
