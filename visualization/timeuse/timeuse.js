@@ -55,7 +55,6 @@ const FILTER_MODELS =
    [FILTER_EDU, FILTER_EMPLOYMENT, FILTER_DAY]];
 const FILTERS_BAR = d3.select("#filters-bar");
 
-const SEARCHBOX_ID = "activities-searchbox";
 const SEARCHBOX_PLACEHOLDER = "e.g. Children, volunteering.. ";
 
 const T_START = parse_time("04:00")
@@ -141,8 +140,7 @@ function preprocess_timeline(person) {
 
 function initialize_visualization() {
   initialize_filters();
-  
-  create_searchbox(SEARCHBOX_ID, SEARCHBOX_PLACEHOLDER, activities, FILTERS_BAR);
+  initialize_searchbox();
 
   // Add top-margin to main-area = height of the fixed header, so they don't overlap
   var header_height = d3.select("#header").node().getBoundingClientRect()["height"];
@@ -194,14 +192,13 @@ function create_filter(filter_model, filters_row) {
   filter.select("input").attr("checked", "checked");
 }
 
-function create_searchbox(id, placeholder, suggestions, container_div) {
-  var searchbox = container_div.append("div")
-    .attr("class", "searchbox")
-    .attr("id", id);
+function initialize_searchbox() {
+  var searchbox = FILTERS_BAR.append("div")
+    .attr("id", "activities-searchbox");
 
   var input = searchbox.append("input")
   .attr("type", "text")
-  .attr("placeholder", placeholder)
+  .attr("placeholder", SEARCHBOX_PLACEHOLDER)
   .on("focus", show_suggestions_box)
   .on("blur", onBlur)
   .on("keydown", () => {
@@ -305,7 +302,7 @@ function filter_persons() {
     filtered_persons = filtered_persons.filter(conditions[i]);
 
 
-  var activities_query = d3.select("#"+SEARCHBOX_ID+" input").node().value.toLowerCase();
+  var activities_query = d3.select("#activities-searchbox input").node().value.toLowerCase();
   filtered_persons = filtered_persons.filter(person => {
     var has_activity = false;
     var activities = person["activities"];
