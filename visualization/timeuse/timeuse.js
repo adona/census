@@ -203,7 +203,7 @@ function initialize_searchbox() {
         completeSearch();
         break;
       default:
-        filter_suggestions();
+        filter_suggestions(input.node().value);
     }
   });
   
@@ -215,7 +215,7 @@ function initialize_searchbox() {
     if (suggestions_box != null) return;
     suggestions_box = searchbox.append("ul")
       .attr("class", "suggestions-box");
-    filter_suggestions();
+    filter_suggestions("");
   }
   
   function hide_suggestions_box() {
@@ -225,8 +225,7 @@ function initialize_searchbox() {
     idx_selected = null;
   }
 
-  function filter_suggestions() {
-    query = input.node().value;
+  function filter_suggestions(query) {
     if (query == "") {
       filtered_activities_by_category = activities_by_category;
     } else {
