@@ -241,7 +241,7 @@ function initialize_searchbox() {
 
   function filter_suggestions() {
     query = input.node().value;
-    filtered_suggestions = suggestions.filter(suggestion => 
+    filtered_suggestions = activities.filter(suggestion => 
         suggestion.toLowerCase().search(query.toLowerCase()) != -1);
     update_suggestions();
   }
