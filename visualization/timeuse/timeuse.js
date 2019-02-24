@@ -82,11 +82,17 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 var persons, activities_by_category;
 
 var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small.json";
+var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 d3.json(url_data, function(d) { // Load the data
   persons = d; // Save to global variable (for easier debugging)
   console.log("Data loaded!")
-  preprocess_data();
-  initialize_visualization();
+
+  d3.json(url_activities, function(d) { // Load the activities by category list
+    activities_by_category = d; // Save to global variable (for easier debugging)
+
+    preprocess_data();
+    initialize_visualization();  
+  });
 });
 
 function preprocess_data() {
@@ -95,28 +101,6 @@ function preprocess_data() {
     person["ID"] = i;
     preprocess_timeline(person);
   }
-  preprocess_activities();
-}
-
-function preprocess_activities() {
-  var activities_by_category_dict = {};
-  for (var i=0; i<persons.length; i++) {
-    var p_activities = persons[i]["activities"];
-    for (var j=0; j<p_activities.length; j++) {
-      var activity = p_activities[j];
-      var category = activity["CATEGORY"];
-      if (!(category in activities_by_category_dict))
-        activities_by_category_dict[category] = new Set();
-      activities_by_category_dict[category].add(activity["ACTIVITY2"]);
-    }
-  }
-
-  activities_by_category = [];
-  for (var category in activities_by_category_dict)
-    activities_by_category.push({
-      "category": category,
-      "activities": Array.from(activities_by_category_dict[category]).sort()
-    });
 }
 
 function preprocess_timeline(person) {
