@@ -82,7 +82,7 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 
 var persons, activities;
 
-var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json";
+var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small.json";
 d3.json(url_data, function(d) { // Load the data
   persons = d; // Save to global variable (for easier debugging)
   console.log("Data loaded!")
