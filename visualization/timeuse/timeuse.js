@@ -57,6 +57,8 @@ const FILTERS_BAR = d3.select("#filters-bar");
 
 const SEARCHBOX_PLACEHOLDER = "e.g. Playing with children, volunteering.. ";
 
+const N_RESULTS_DIV = d3.select("#n-results").remove().node();
+
 const T_START = parse_time("04:00")
   T_STOP = add_one_day(T_START);
 const TIME_EXTENT = d3.extent([T_START, T_STOP]);   // Timelines run from 4am to 4am next day
@@ -81,57 +83,37 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 
 var persons, activities_by_category;
 
-var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json";
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
-d3.json(url_data, function(d) { // Load the data
-  persons = d; // Save to global variable (for easier debugging)
+var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json.zip";
 
-  d3.json(url_activities, function(d) { // Load the activities by category list
-    activities_by_category = d; // Save to global variable (for easier debugging)
+d3.json(url_activities, function(d) {
+  activities_by_category = d; // Save to global variable (for easier debugging)  
+  
+  initialize_header();
 
-    preprocess_data();
-    initialize_visualization();  
+  console.log("Loading data..");
+  fetch(url_data)
+    .then(response => response.blob())
+    .then(blob => decompress_data(blob, function(d) {
+      persons = d; // Save to global variable (for easier debugging)
+
+      preprocess_data();
+
+      d3.select("#loading-data").remove();
+      d3.select("#header").node().appendChild(N_RESULTS_DIV);    
+
+      filter_persons();
+    }));
   });
-});
 
-function preprocess_data() {
-  for (var i=0; i<persons.length; i++) {
-    person = persons[i];
-    person["ID"] = i;
-    preprocess_timeline(person);
-  }
-}
 
-function preprocess_timeline(person) {
-  var timeline = person["activities"];
-  // Parse START & STOP times
-  var next_day = false;
-  for (var i = 0; i < timeline.length; i++) {
-    var activity = timeline[i];
-    activity["ACTNUM"] = i;
-    var start = parse_time(activity["START"]),
-      stop = i<timeline.length-1 ? parse_time(timeline[i+1]["START"]) : T_STOP;
-    if (start > stop) { // Detect that we've just crossed midnight..
-      next_day = true;
-      stop = add_one_day(stop);
-    } else if (next_day) { // .. and from then onward add a day to all times.
-      start = add_one_day(start);
-      stop = add_one_day(stop);
-    }
-    activity["START"] = start;
-    activity["STOP"] = stop;
-  }
-}
-
-function initialize_visualization() {
+function initialize_header() {
   initialize_filters();
   initialize_searchbox();
 
   // Add top-margin to main-area = height of the fixed header, so they don't overlap
   var header_height = d3.select("#header").node().getBoundingClientRect()["height"];
   d3.select("#timelines-list").attr("style", "margin-top: "+ (header_height) + "px;");
-
-  filter_persons();
 }
 
 function initialize_filters() {
@@ -314,6 +296,48 @@ function initialize_searchbox() {
   function onBlur() {
     hide_suggestions_box();
     filter_persons();
+  }
+}
+
+function decompress_data(blob, callback) {
+  console.log("Decompressing data..");
+  zip.createReader(new zip.BlobReader(blob), function(reader) {
+    reader.getEntries(function(entries) {
+      entries[0].getData(new zip.TextWriter(), function(d) {
+        d = JSON.parse(d);
+        callback(d);
+      });
+    });
+  });
+}
+
+function preprocess_data() {
+  console.log("Preprocessing data..")
+  for (var i=0; i<persons.length; i++) {
+    person = persons[i];
+    person["ID"] = i;
+    preprocess_timeline(person);
+  }
+}
+
+function preprocess_timeline(person) {
+  var timeline = person["activities"];
+  // Parse START & STOP times
+  var next_day = false;
+  for (var i = 0; i < timeline.length; i++) {
+    var activity = timeline[i];
+    activity["ACTNUM"] = i;
+    var start = parse_time(activity["START"]),
+      stop = i<timeline.length-1 ? parse_time(timeline[i+1]["START"]) : T_STOP;
+    if (start > stop) { // Detect that we've just crossed midnight..
+      next_day = true;
+      stop = add_one_day(stop);
+    } else if (next_day) { // .. and from then onward add a day to all times.
+      start = add_one_day(start);
+      stop = add_one_day(stop);
+    }
+    activity["START"] = start;
+    activity["STOP"] = stop;
   }
 }
 

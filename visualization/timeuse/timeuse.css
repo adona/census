@@ -55,7 +55,7 @@ body {
 	text-decoration: none;
 }
 
-#n-results {
+#loading-data, #n-results {
   margin-bottom: 15px;
   font-size: 16px;
 }
