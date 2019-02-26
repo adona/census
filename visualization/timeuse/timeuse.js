@@ -58,6 +58,7 @@ const FILTERS_BAR = d3.select("#filters-bar");
 const SEARCHBOX_PLACEHOLDER = "e.g. Playing with children, volunteering.. ";
 
 const N_RESULTS_DIV = d3.select("#n-results").remove().node();
+const RESULTS_PER_PAGE = 100;
 
 const T_START = parse_time("04:00");
 const TIME_EXTENT = d3.extent([T_START, add_one_day(T_START)]);   // Timelines run from 4am to 4am next day
@@ -81,7 +82,7 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 const HAS_LIGHT_ACTIVITY_COLOR = ["Sleep", "Personal Care", "Missing data"];
 
 
-var persons, activities_by_category;
+var activities_by_category, persons, filtered_persons, npersons_visible;
 
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small3.json.zip";
@@ -103,6 +104,13 @@ d3.json(url_activities, function(d) {
       d3.select("#header").node().appendChild(N_RESULTS_DIV);    
 
       filter_persons();
+
+      $(window).on('scroll', function() {
+        var scrollPercent = ($(window).scrollTop() / 
+          ($(document).height() - $(window).height())) * 100;
+        if (scrollPercent >= 80)
+          add_next_results_page();
+      });
     }));
   });
 
@@ -369,8 +377,15 @@ function filter_persons() {
 
 function visualize_filtered_persons() {
   d3.selectAll(".timeline-container").remove();
-  for (var i=0; i<Math.min(50, filtered_persons.length); i++)
+  npersons_visible = 0;
+  add_next_results_page();
+}
+
+function add_next_results_page() {
+  var new_npersons_visible = Math.min(npersons_visible + RESULTS_PER_PAGE, filtered_persons.length);
+  for (var i=npersons_visible; i<new_npersons_visible; i++)
     visualize_person(filtered_persons[i]);
+  npersons_visible = new_npersons_visible;
 }
 
 function visualize_person(person) {  
