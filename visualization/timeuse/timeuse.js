@@ -59,9 +59,8 @@ const SEARCHBOX_PLACEHOLDER = "e.g. Playing with children, volunteering.. ";
 
 const N_RESULTS_DIV = d3.select("#n-results").remove().node();
 
-const T_START = parse_time("04:00")
-  T_STOP = add_one_day(T_START);
-const TIME_EXTENT = d3.extent([T_START, T_STOP]);   // Timelines run from 4am to 4am next day
+const T_START = parse_time("04:00");
+const TIME_EXTENT = d3.extent([T_START, add_one_day(T_START)]);   // Timelines run from 4am to 4am next day
 const TIMELINE_TEMPLATE = d3.select(".timeline-container").remove().node();
 const TIMELINE_MARGIN_BOTTOM = 20;
 const ACTIVITY_RECT_HEIGHT = 20;
@@ -328,7 +327,7 @@ function preprocess_timeline(person) {
     var activity = timeline[i];
     activity["ACTNUM"] = i;
     var start = parse_time(activity["START"]),
-      stop = i<timeline.length-1 ? parse_time(timeline[i+1]["START"]) : T_STOP;
+      stop = i<timeline.length-1 ? parse_time(timeline[i+1]["START"]) : T_START;
     if (start > stop) { // Detect that we've just crossed midnight..
       next_day = true;
       stop = add_one_day(stop);
