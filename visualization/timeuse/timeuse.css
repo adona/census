@@ -171,14 +171,10 @@ body {
 
 /* Timelines */
 
-#timelines-list {
-  width: var(--central-column-width);
-}
-
 .timeline-container {
   position: relative;
-  height: var(--timeline-container-height);
   width: 100%;
+  height: var(--timeline-container-height);
   margin-bottom: 5px;
 }
 
