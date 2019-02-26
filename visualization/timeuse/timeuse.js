@@ -427,11 +427,15 @@ function create_timeline(person, timeline_container) {
     .on("mouseout", activityMouseOut);
 
     // Mouseover event listeners
+    var summary_div = timeline_container.select(".summary");
     function activityMouseOver(activity, i) {
       var y = time_scale(activity["STOP"]) + 5;
       timeline_container.select("#activity-" + person["ID"] + "-" + activity["ACTNUM"])
         .attr("y", y0 - ACTIVITY_RECT_HEIGHT_MOUSEOVER)
         .attr("height", ACTIVITY_RECT_HEIGHT_MOUSEOVER);
+      // Remove the demographics summary
+      summary_div.remove();
+      // Add activity description
       timeline_container.select(".annotations")
         .append("div")
         .attr("class", "activity-label")
@@ -444,7 +448,10 @@ function create_timeline(person, timeline_container) {
       timeline_container.select("#activity-" + person["ID"] + "-" + activity["ACTNUM"])
         .attr("y", y0 - ACTIVITY_RECT_HEIGHT)
         .attr("height", ACTIVITY_RECT_HEIGHT);
+      // Remove activity description
       d3.select("#label-" + person["ID"] + "-" + activity["ACTNUM"]).remove();
+      // Add back demographics summary
+      timeline_container.select(".annotations").node().appendChild(summary_div.node());
     }
 }
 

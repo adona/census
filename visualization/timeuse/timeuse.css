@@ -179,33 +179,29 @@ body {
 }
 
 .annotations {
-  position: relative;
-  height: 15px;
   font-size: 12px;
 }
 
 .demographics {
-  display: inline-block;
-  width: calc(100% - 103px);
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }
 
 .day {
-  display: inline-block;
-  width: 100px;
-  text-align: right;
+  position: absolute;
+  top: 0px;
+  right: 0px;
 }
 
 .timeline {
-  position: absolute;
-  top: 0px;
   width: 100%;
-  height: var(--timeline-container-height);
+  height: 100%;
 }
 
 .activity-label {
   position: absolute;
   top: 0px;
-  padding: 0px 5px;
   background: white;
   border-radius: 3px;
 }
