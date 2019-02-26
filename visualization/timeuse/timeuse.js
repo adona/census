@@ -66,22 +66,22 @@ const ACTIVITY_RECT_HEIGHT = 20;
 const ACTIVITY_RECT_HEIGHT_MOUSEOVER = 35;
 const ACTIVITY_RECT_RADIUS = 3;
 const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-69306d-247ba0-70c1b3-ffb400
-  "Sleeping": "#EFEFEF", // Grey
+  "Sleep": "#EFEFEF", // Grey
   "Personal Care": "#EFEFEF", // Grey
   "Housework & Errands": "#247BA0", // Light Blue
   "Work": "#0D2C54", // Dark Blue
   "Education": "#69306D", // Purple
-  "Caring for others": "#70C1B3", // Green
+  "Caring for Others": "#70C1B3", // Green
   "Eating & drinking": "#F77046", // Orange
   "Leisure": "#FFB400", // Bright Yellow
-  "Traveling": "#999999", // Medium-grey
+  "Travel": "#999999", // Medium-grey
   "Missing data": "#FFFFFF" // White
 };
 
 
 var persons, activities_by_category;
 
-var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small.json";
+var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json";
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 d3.json(url_data, function(d) { // Load the data
   persons = d; // Save to global variable (for easier debugging)
@@ -331,7 +331,7 @@ function filter_persons() {
     var has_activity = false;
     var activities = person["activities"];
     for (var i=0; i<activities.length; i++)
-      if (activities[i]["ACTIVITY2"].toLowerCase().search(activities_query) != -1) {
+      if (activities[i]["ACTIVITY3"].toLowerCase().search(activities_query) != -1) {
         has_activity = true;
         break;
       }
@@ -414,7 +414,7 @@ function create_timeline(person, timeline_container) {
         .attr("class", "activity-label")
         .attr("id", "label-"  + person["ID"] + "-" + activity["ACTNUM"])
         .attr("style", "left: " + y + "px;")
-        .text(activity["ACTIVITY2"]);
+        .text(activity["ACTIVITY3"]);
     }
     
     function activityMouseOut(activity, i) {
