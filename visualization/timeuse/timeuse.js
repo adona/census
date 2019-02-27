@@ -447,42 +447,58 @@ function create_timeline(person, timeline_container) {
     var summary_div = annotations_div.select(".summary");
 
     function activityMouseOver(activity, i) {
-      // Remove the demographics summary
       summary_div.remove();
-      // Add activity description tooltip
-      var id = "label-"  + person["ID"] + "-" + activity["ACTNUM"];
-      var left = (time_scale(activity["START"]) + time_scale(activity["STOP"]))/2 - 21;
-      var position = "left: " +  left + "px; "
-      var text = activity["ACTIVITY3"];
-      var color = HAS_LIGHT_ACTIVITY_COLOR.includes(activity["CATEGORY"]) ? "black" : "white";
-      var style = "background: " + ACTIVITY_COLORS[activity["CATEGORY"]] + "; " + 
-        "color: " + color + "; ";
-      create_tooltip(id, position, text, style, annotations_div);
+      add_activity_description(person, activity, timeline_container, time_scale);
     }
     
     function activityMouseOut(activity, i) {
-      // Remove activity description tooltip
-      d3.select("#label-" + person["ID"] + "-" + activity["ACTNUM"]).remove();
-      // Add back demographics summary
-      timeline_container.select(".annotations").node().appendChild(summary_div.node());
+      remove_activity_description(person, activity);
+      annotations_div.node().appendChild(summary_div.node());
     }
+}
 
-    function create_tooltip(id, position, text, style, parent_div) {
-      var tooltip_container = parent_div
-        .append("div")
-          .attr("class", "tooltip")
-          .attr("id", id)
-          .attr("style", position);
-      tooltip_container
-        .append("div")
-          .attr("class", "tooltip-arrow")
-          .attr("style", style + "transform: rotate(45deg);");  
-      tooltip_container
-        .append("div")
-          .attr("class", "tooltip-body")
-          .attr("style", style)
-          .text(text);
-    }
+function create_tooltip(id, parent_div, position, arrow_direction) {
+  position_string = "top: " + position["top"] + "px; " + "left: " + position["left"] + "px; ";
+  var tooltip = parent_div
+    .append("div")
+      .attr("class", "tooltip")
+      .attr("id", id)
+      .attr("style", position_string);
+  tooltip
+    .append("div")
+      .attr("class", "tooltip-arrow")
+      .attr("arrow-direction", arrow_direction);
+  tooltip
+    .append("div")
+      .attr("class", "tooltip-body")
+      .attr("arrow-direction", arrow_direction);
+  return tooltip;
+}
+
+function add_activity_description(person, activity, timeline_container, time_scale) {
+  var id = "activity-description-"  + person["ID"] + "-" + activity["ACTNUM"];
+  var parent_div = timeline_container.select(".annotations");
+  var position = {
+    "top": -3,
+    "left": (time_scale(activity["START"]) + time_scale(activity["STOP"]))/2 - 21
+  }
+  var arrow_direction ="down";
+  var tooltip = create_tooltip(id, parent_div, position, arrow_direction);
+  tooltip.classed("activity-description", true);
+
+  var color = HAS_LIGHT_ACTIVITY_COLOR.includes(activity["CATEGORY"]) ? "black" : "white";
+  var style = "background: " + ACTIVITY_COLORS[activity["CATEGORY"]] + "; " + 
+    "color: " + color + "; border-width: 0px;";
+  var text = activity["ACTIVITY3"];
+  tooltip.select(".tooltip-arrow")
+    .attr("style", style);
+  tooltip.select(".tooltip-body")
+    .attr("style", style)
+    .text(text);
+}
+
+function remove_activity_description(person, activity) {
+  d3.select("#activity-description-" + person["ID"] + "-" + activity["ACTNUM"]).remove();
 }
 
 /// Helper functions

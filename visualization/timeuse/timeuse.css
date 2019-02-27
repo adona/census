@@ -201,28 +201,6 @@ body {
   height: 100%;
 }
 
-.tooltip {
-  position: absolute;
-}
-
-.tooltip-body {
-  position: relative;
-  border-radius: 3px;
-  padding: 4px 8px;
-  line-height: 15px;
-  font-size: 12px;
-  z-index: 2;
-}
-
-.tooltip-arrow {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  width: 12px;
-  height: 12px;
-  z-index: 1;
-}
-
 .axis path {
   fill: none;
   stroke: #aaa;
@@ -236,4 +214,49 @@ body {
 
 .tick text {
   font-size: 0.8em;
+}
+
+/* Tooltips */
+
+.tooltip {
+  position: absolute;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: lightgray;
+}
+
+.tooltip-arrow[arrow-direction="down"] {
+  bottom: -5px;
+  left: 15px;
+}
+
+.tooltip-arrow[arrow-direction="left"] {
+  top: 15px;
+  left: -5px;
+}
+
+.tooltip-body {
+  position: relative;
+  z-index: 2;
+  min-width: 75px;
+  background: white;
+  border: solid lightgray 1px;
+  border-radius: 3px;
+  padding: 4px 8px;
+  line-height: 15px;
+  font-size: 12px;
+}
+
+.tooltip-body[arrow-direction="bottom"] {
+  min-height: 23px;
+}
+
+.tooltip-body[arrow-direction="left"] {
+  min-height: 75px;
 }
