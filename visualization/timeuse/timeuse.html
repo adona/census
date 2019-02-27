@@ -10,26 +10,30 @@
   <link rel="stylesheet" href="timeuse.css">
 </head>
 <body>
-  <div id="header">
-    <div id="title"><h1>A day in the life</h1></div>
-    <div id="description">
-      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
-    </div>
-    <div id="filters-bar"></div>
-    <div id="loading-data">Loading data..</div>
-    <div id="n-results"><span id="n-results-placeholder"></span> Results:</div>
-  </div>
-  <div id="timelines-list">
-    <!-- Timeline template -->
-    <div class="timeline-container">
-      <div class="annotations">
-        <div class="summary">
-            <div class="demographics"></div>
-            <div class="day"></div>    
-        </div>
+  <div id="main">
+    <div id="header">
+      <div id="title"><h1>A day in the life</h1></div>
+      <div id="description">
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
       </div>
-      <svg class="timeline"></svg>
+      <div id="filters-bar"></div>
+      <div id="loading-data">Loading data..</div>
+      <div id="n-results"><span id="n-results-placeholder"></span> Results:</div>
     </div>
+    <div id="timelines-list">
+      <!-- Timeline template -->
+      <div class="timeline-container">
+        <div class="annotations">
+          <div class="summary">
+              <div class="demographics"></div>
+              <div class="day"></div>    
+          </div>
+        </div>
+        <svg class="timeline"></svg>
+      </div>
+    </div>
+  </div>
+  <div id="sidebar">
   </div>
   <script src="timeuse.js"></script>
 </body>

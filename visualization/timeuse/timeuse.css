@@ -2,8 +2,9 @@
   box-sizing: border-box;
 
   /* CSS variables */
-  --body-width: 690px;
-  --filters-bar-width: 690px;
+  --body-width: 850px;
+  --main-width: 690px;
+  --sidebar-width: 150px;
   --timeline-container-height: 70px;
   --filter-checked-color: #247BA0;
 }
@@ -19,12 +20,27 @@ body {
   font-family: Helvetica;
 }
 
+#main {
+  display: inline-block;
+  vertical-align: top;
+  width: var(--main-width);
+}
+
+#sidebar {
+  display: inline-block;
+  position: relative;
+  vertical-align: top;
+  width: var(--sidebar-width);
+  background: red;
+}
+
+
 /* Header */
 
 #header {
   position: fixed;
   top: 0;
-  width: var(--body-width);
+  width: var(--main-width);
   background: white;
   z-index: 1;
 }
@@ -41,7 +57,6 @@ body {
 }
 
 #description {
-  width: var(--filters-bar-width);
 	margin-bottom: 15px;
 }
 
@@ -65,7 +80,6 @@ body {
 /* Filters */
 
 #filters-bar {
-  width: var(--filters-bar-width);
   margin-bottom: 20px;
 }
 
@@ -129,7 +143,7 @@ body {
 
 #activities-searchbox {
   position: relative;
-  width: calc(var(--filters-bar-width) - 5px); /* I don't understand why the 5px adjustment is necessary, but it is. */
+  width: calc(100% - 5px); /* I don't understand why the 5px adjustment is necessary, but it is. */
 }
 
 #activities-searchbox input {
@@ -143,7 +157,7 @@ body {
 
 .suggestions-box {
   position: absolute;
-  width: calc(var(--filters-bar-width) - 5px);
+  width: calc(100% - 5px);
   height: 300px;
   overflow-y: scroll;
   border: 1px solid #ccc;
@@ -175,7 +189,6 @@ body {
 
 .timeline-container {
   position: relative;
-  width: 100%;
   height: var(--timeline-container-height);
   margin-bottom: 5px;
 }
