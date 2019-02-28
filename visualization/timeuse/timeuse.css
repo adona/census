@@ -273,3 +273,20 @@ body {
 .tooltip-body[arrow-direction="left"] {
   min-height: 75px;
 }
+
+/* Person profile */
+
+.person-profile-container {
+  width: 200px;
+  padding: 10px 15px;
+}
+
+.person-profile-container ul {
+  margin: 0px;
+  list-style-position: outside;
+}
+
+.person-profile-container li {
+  position: relative;
+  left: -15px;
+}

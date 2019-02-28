@@ -81,11 +81,12 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 };
 const HAS_LIGHT_ACTIVITY_COLOR = ["Sleep", "Personal Care", "Missing data"];
 
+const PERSON_PROFILE_TEMPLATE = d3.select(".person-profile-container").remove().node();
 
 var activities_by_category, persons, filtered_persons, npersons_visible;
 
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
-var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small3.json.zip";
+var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small5.json.zip";
 
 d3.json(url_activities, function(d) {
   activities_by_category = d; // Save to global variable (for easier debugging)  
@@ -449,10 +450,12 @@ function create_timeline(person, timeline_container) {
     function activityMouseOver(activity, i) {
       summary_div.remove();
       add_activity_description(person, activity, timeline_container, time_scale);
+      add_detailed_profile(person, timeline_container);
     }
     
     function activityMouseOut(activity, i) {
       remove_activity_description(person, activity);
+      remove_detailed_profile(person);
       annotations_div.node().appendChild(summary_div.node());
     }
 }
@@ -501,6 +504,107 @@ function remove_activity_description(person, activity) {
   d3.select("#activity-description-" + person["ID"] + "-" + activity["ACTNUM"]).remove();
 }
 
+function add_detailed_profile(person, timeline_container) {
+  var id = "person-profile-"  + person["ID"];
+  var parent_div = d3.select("#sidebar");
+  var position = {
+    "left": 5,
+    "top": $(timeline_container.node()).offset().top + 20
+  };
+  var arrow_direction = "left";
+  var profile = create_tooltip(id, parent_div, position, arrow_direction);
+  profile.classed("person-profile", true);
+  var profile_container = profile.select(".tooltip-body");
+  profile_container.classed("person-profile-container", true);
+
+  var template = PERSON_PROFILE_TEMPLATE.cloneNode(true);
+  $(profile_container.node()).append(template.childNodes);
+
+  var simple_fields = ["AGE", "SEX", "RACE", "MARST", "EDUC"];
+  for (var i=0; i<simple_fields.length; i++) {
+    var field = simple_fields[i];
+    profile.select("."+field).text(person[field]);  
+  }
+  add_living_with_information(person, profile);
+  add_work_information(person, profile);
+}
+
+function add_living_with_information(person, profile) {
+  var living_with_div = profile.select(".living-with");
+  if (person["HH_SIZE"] == 1) {
+    living_with_div.text("Living alone");
+  }
+  else {
+    var living_with = person["LIVING_WITH"];
+    var relations = Object.keys(living_with);
+    var pronoun = person["SEX"] == "Female" ? "her" : "his";
+    var lis = [];
+    if (relations.includes("partner"))
+      lis.push(pronoun + " " + living_with["partner"].toLowerCase());
+    if (relations.includes("children")) {
+      if (living_with["children"].length == 1)
+        lis.push("one child (age " + living_with["children"][0] + ")");
+      else 
+        lis.push(living_with["children"].length + " children " + 
+          "(ages " + list_to_string(living_with["children"]) + ")");
+    }
+    if (relations.includes("grandchildren")) {
+      if (living_with["grandchildren"].length == 1)
+        lis.push("one grandchild (age " + living_with["grandchildren"][0] + ")");
+      else 
+        lis.push(living_with["grandchildren"].length + " grandchildren " + 
+          "(ages " + list_to_string(living_with["grandchildren"]) + ")");
+    }
+    if (relations.includes("parents")) {
+      if (living_with["parents"].length == 1)
+        lis.push(pronoun + " " + living_with["parents"][0]);
+      else 
+        lis.push(pronoun + " parents");
+    }
+    if (relations.includes("siblings"))
+      if(living_with["siblings"] == 1)
+        lis.push("one sibling");
+      else  
+        lis.push(living_with["siblings"] + " siblings");
+    if (relations.includes("other_relatives"))
+      if(living_with["other_relatives"] == 1)
+        lis.push("one other relative");
+      else  
+        lis.push(living_with["other_relatives"] + " other relatives");
+    if (relations.includes("housemates")) 
+      if(living_with["housemates"] == 1)
+        lis.push("one housemate");
+      else  
+        lis.push(living_with["housemates"] + " housemates");
+
+    if (lis.length == 1) {
+      living_with_div.text("Living with " + lis[0]);
+    } else {
+      living_with_div.append("span")
+        .text("Living with:")
+      var ul = living_with_div
+        .append("ul")
+        .selectAll("li")
+          .data(lis)
+          .enter()
+            .append("li")
+            .text(li => li);
+    }
+  }
+}
+
+function add_work_information(person, profile) {
+  profile.select(".EMPSTAT").text(person["EMPSTAT"]);
+  if (person["EMPSTAT"] == "Working") {
+    profile.select(".FULLPART").text(person["FULLPART"].toLowerCase());
+    profile.select(".OCC").text(person["OCC"]);
+  }
+}
+
+function remove_detailed_profile(person) {
+  d3.select("#person-profile-" + person["ID"]).remove();
+}
+
 /// Helper functions
 
 function parse_time(time_str) {
@@ -516,4 +620,27 @@ function parse_time(time_str) {
 
 function add_one_day(date) {
   return new Date(date.getTime() + 24*60*60*1000);
+}
+
+function list_to_string(list) {
+  var string;
+  switch (list.length) {
+    case 0: 
+      string = "";
+      break;
+    case 1:
+      string = list[0];
+      break;
+    case 2: 
+      string = list[0] + " and " + list[1];
+      break;
+    default:
+      string = "";
+      for (var i=0; i<list.length-1; i++)
+        string += list[i] + ", "
+      if (list.length > 1)
+        string += "and ";
+      string += list[list.length-1];
+  }
+  return string;
 }
