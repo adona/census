@@ -65,7 +65,6 @@ const TIME_EXTENT = d3.extent([T_START, add_one_day(T_START)]);   // Timelines r
 const TIMELINE_TEMPLATE = d3.select(".timeline-container").remove().node();
 const TIMELINE_MARGIN_BOTTOM = 20;
 const ACTIVITY_RECT_HEIGHT = 20;
-const ACTIVITY_RECT_HEIGHT_MOUSEOVER = 35;
 const ACTIVITY_RECT_RADIUS = 3;
 const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-69306d-247ba0-70c1b3-ffb400
   "Sleep": "#EFEFEF", // Grey
@@ -121,7 +120,7 @@ function initialize_header() {
   initialize_searchbox();
 
   // Add top-margin to main-area = height of the fixed header, so they don't overlap
-  var header_height = d3.select("#header").node().getBoundingClientRect()["height"];
+  var header_height = $("#header").height();
   d3.select("#timelines-list").attr("style", "margin-top: "+ (header_height) + "px;");
 }
 
@@ -208,7 +207,7 @@ function initialize_searchbox() {
 
   function show_suggestions_box() {
     if (suggestions_box != null) return;
-    var suggestion_box_top = searchbox.node().getBoundingClientRect()["height"];
+    var suggestion_box_top = $(searchbox.node()).height();
     suggestions_box = searchbox.append("ul")
       .attr("class", "suggestions-box")
       .attr("style", "top: " + suggestion_box_top + "px;");
@@ -409,9 +408,8 @@ function visualize_person(person) {
 
 function create_timeline(person, timeline_container) {
   var svg = timeline_container.select(".timeline"),
-    bbox = svg.node().getBoundingClientRect(),
-    width = bbox["width"]-1,
-    height = bbox["height"];
+    width = $(svg.node()).width()-1,
+    height = $(svg.node()).height();
 
   // Create the axis
   var time_scale = d3.scaleTime()
