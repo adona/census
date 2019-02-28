@@ -4,7 +4,7 @@ import csv
 
 DATADIR = "/Users/adona/data/census/timeuse/"
 RELEVANT_FIELDS_HOUSEHOLD = ["HH_SIZE"]
-RELEVANT_FIELDS_PERSON = ["DAY", "AGE", "SEX", "RACE", "MARST", "LIVING_WITH", "EDUC", "EMPSTAT", "FULLPART", "OCC"]
+RELEVANT_FIELDS_PERSON = ["DAY", "AGE", "SEX", "RACE", "MARST", "HH_NUMOWNKIDS", "LIVING_WITH", "EDUC", "EMPSTAT", "FULLPART", "OCC"]
 RELEVANT_FIELDS_ACTIVITY = ["ACTIVITY3", "CATEGORY", "START"]
 
 def add_household_fields(households):
