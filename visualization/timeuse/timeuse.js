@@ -41,7 +41,7 @@ const FILTER_EMPLOYMENT = { "filter-id": "filter-employement",
   "name": "Employment",
   "options":
      [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "employed", "label": "Working", "condition": p => p["EMPSTAT"] == "Working"},
+      {"id": "employed", "label": "Employed", "condition": p => p["EMPSTAT"] == "Working"},
       {"id": "unemployed", "label": "Unemployed", "condition": p => p["EMPSTAT"] == "Unemployed"},
       {"id": "not_looking", "label": "Not Looking", "condition": p => p["EMPSTAT"] == "Not in labor force"}]};
 const FILTER_DAY = { "filter-id": "filter-day", 
