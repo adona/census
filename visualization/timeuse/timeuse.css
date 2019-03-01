@@ -2,9 +2,9 @@
   box-sizing: border-box;
 
   /* CSS variables */
-  --body-width: 850px;
+  --body-width: 950px;
   --main-width: 690px;
-  --sidebar-width: 150px;
+  --sidebar-width: 250px;
   --timeline-container-height: 70px;
   --filter-checked-color: #247BA0;
 }
@@ -15,7 +15,7 @@
 
 body {
   width: var(--body-width);
-  margin: 0px auto;
+  margin: 0px 100px;
   overflow-y: scroll;
   font-family: Helvetica;
 }
