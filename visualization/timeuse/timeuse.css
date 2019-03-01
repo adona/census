@@ -250,7 +250,7 @@ body {
 }
 
 .tooltip-arrow[arrow-direction="left"] {
-  top: 15px;
+  bottom: 50%;
   left: -5px;
 }
 

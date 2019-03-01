@@ -506,10 +506,7 @@ function add_detailed_profile(person, timeline_container) {
   // Create the tooltip
   var id = "person-profile-"  + person["ID"];
   var parent_div = d3.select("#sidebar");
-  var position = {
-    "left": 5,
-    "top": $(timeline_container.node()).offset().top + 20
-  };
+  var position = { "left": 10 }; // Will set top once I know the height of the tooltip
   var arrow_direction = "left";
   var profile_tooltip = create_tooltip(id, parent_div, position, arrow_direction);
   profile_tooltip.classed("profile-tooltip", true);
@@ -532,6 +529,12 @@ function add_detailed_profile(person, timeline_container) {
   }
   add_living_with_information(person, profile_card);
   add_work_information(person, profile_card);
+
+  // Adjust vertical position
+  var top = $(timeline_container.node()).offset().top 
+    + $(timeline_container.node()).height() - 24
+    - $(profile_tooltip.node()).height() / 2;
+  profile_tooltip.attr("style", profile_tooltip.attr("style") + "top: " + top + "px; ");
 }
 
 function add_living_with_information(person, profile_card) {
