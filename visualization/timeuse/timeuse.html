@@ -35,14 +35,46 @@
   </div>
   <div id="sidebar">
     <!-- Person profile template -->
-    <div class="person-profile-container" style="visibility: hidden;">
-      <span class="AGE"></span>yo <span class="RACE"></span> <span class="SEX"></span><br>
-      <span class="MARST"></span><br>
-      <div class="living-with"></div>
-      <span class="EDUC"></span><br>
-      <div class="employment">
-        <span class="EMPSTAT"></span> <span class="FULLPART"></span><br>
-        <span class="OCC"></span>
+    <div class="profile-card" style="visibility: hidden;">
+      <div class="header">
+        <img class="icon">
+        <div class="summary">
+          <div class="demographics">
+            <span class="AGE"></span>yo <span class="RACE"></span> <span class="SEX"></span>
+          </div>
+          <div class="DAY"></div>
+        </div>
+      </div>
+      <div class="separator"></div>
+      <div class="details">
+        <div class="field">
+          <div class="description">Relationship</div>
+          <div class="MARST value"></div>
+        </div>    
+        <div class="field">
+          <div class="description">Household</div>
+          <div class="living-with value"></div>
+        </div>      
+        <div class="separator"></div>
+        <div class="field">
+          <div class="description">Education</div>
+          <div class="EDUC value"></div>
+        </div>
+        <div class="field">
+          <div class="description">Employment</div>
+          <div class="value"><span class="EMPSTAT"></span> <span class="FULLPART"></span> </div>
+        </div>
+        <div class="field">
+          <div class="description">Occupation</div>
+          <div class="value OCC"></div>
+        </div>
+        <div class="separator"></div>
+        <div class="field">
+          <div class="description">HH Income <br>
+            <span class="description-detail">(last year)</span>
+          </div>
+          <div class="FAMINCOME value"></div>
+        </div>        
       </div>
     </div>
   </div>

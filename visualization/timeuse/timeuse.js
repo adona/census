@@ -80,7 +80,7 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
 };
 const HAS_LIGHT_ACTIVITY_COLOR = ["Sleep", "Personal Care", "Missing data"];
 
-const PERSON_PROFILE_TEMPLATE = d3.select(".person-profile-container").remove().node();
+const PROFILE_CARD_TEMPLATE = d3.select(".profile-card").remove().node();
 
 var activities_by_category, persons, filtered_persons, npersons_visible;
 
@@ -503,6 +503,7 @@ function remove_activity_description(person, activity) {
 }
 
 function add_detailed_profile(person, timeline_container) {
+  // Create the tooltip
   var id = "person-profile-"  + person["ID"];
   var parent_div = d3.select("#sidebar");
   var position = {
@@ -510,25 +511,31 @@ function add_detailed_profile(person, timeline_container) {
     "top": $(timeline_container.node()).offset().top + 20
   };
   var arrow_direction = "left";
-  var profile = create_tooltip(id, parent_div, position, arrow_direction);
-  profile.classed("person-profile", true);
-  var profile_container = profile.select(".tooltip-body");
-  profile_container.classed("person-profile-container", true);
+  var profile_tooltip = create_tooltip(id, parent_div, position, arrow_direction);
+  profile_tooltip.classed("profile-tooltip", true);
 
-  var template = PERSON_PROFILE_TEMPLATE.cloneNode(true);
-  $(profile_container.node()).append(template.childNodes);
+  // Set up the profile card template
+  var profile_card = profile_tooltip.select(".tooltip-body");
+  profile_card.classed("profile-card", true);
+  var template = PROFILE_CARD_TEMPLATE.cloneNode(true);
+  $(profile_card.node()).append(template.childNodes);
 
-  var simple_fields = ["AGE", "SEX", "RACE", "MARST", "EDUC"];
+  // Fill in the information
+  profile_card.select(".icon")
+    .attr("src", "img/"+person["SEX"]+".png")
+    .attr("alt", "Female default profile image icon");
+
+  var simple_fields = ["AGE", "SEX", "RACE", "DAY", "MARST", "EDUC", "FAMINCOME"];
   for (var i=0; i<simple_fields.length; i++) {
     var field = simple_fields[i];
-    profile.select("."+field).text(person[field]);  
+    profile_card.select("."+field).text(person[field]);  
   }
-  add_living_with_information(person, profile);
-  add_work_information(person, profile);
+  add_living_with_information(person, profile_card);
+  add_work_information(person, profile_card);
 }
 
-function add_living_with_information(person, profile) {
-  var living_with_div = profile.select(".living-with");
+function add_living_with_information(person, profile_card) {
+  var living_with_div = profile_card.select(".living-with");
   if (person["HH_SIZE"] == 1) {
     living_with_div.text("Living alone");
   }
@@ -591,11 +598,13 @@ function add_living_with_information(person, profile) {
   }
 }
 
-function add_work_information(person, profile) {
-  profile.select(".EMPSTAT").text(person["EMPSTAT"]);
+function add_work_information(person, profile_card) {
+  profile_card.select(".EMPSTAT").text(person["EMPSTAT"]);
   if (person["EMPSTAT"] == "Working") {
-    profile.select(".FULLPART").text(person["FULLPART"].toLowerCase());
-    profile.select(".OCC").text(person["OCC"]);
+    profile_card.select(".FULLPART").text(person["FULLPART"].toLowerCase());
+    profile_card.select(".OCC").text(person["OCC"]);
+  } else {
+    $(profile_card.select(".OCC").node()).parent().remove();
   }
 }
 
