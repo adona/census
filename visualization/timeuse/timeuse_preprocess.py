@@ -10,57 +10,74 @@ RELEVANT_FIELDS_ACTIVITY = ["ACTIVITY3", "CATEGORY", "START"]
 
 def add_household_fields(households):
   for household in households:
+    respondent = household["persons"][0]
     for field in RELEVANT_FIELDS_HOUSEHOLD:
-      household["persons"][0][field] = household[field]
+      respondent[field] = household[field]
 
 def add_living_with_field(households, data_dictionary):
   for household in households:
     respondent = household["persons"][0]
-    respondent["LIVING_WITH"] = {}
-    for other_hh_member in household["persons"][1:]:
-      if other_hh_member["RELATE"] in ["020", "021"]:
-        respondent["LIVING_WITH"]["partner"] = data_dictionary["RELATE"][other_hh_member["RELATE"]]
-      elif other_hh_member["RELATE"] in ["022", "027", "040"]:
-        if "children" not in respondent["LIVING_WITH"]:
-          respondent["LIVING_WITH"]["children"] = []
-        respondent["LIVING_WITH"]["children"].append(int(other_hh_member["AGE"]))
-      elif other_hh_member["RELATE"] == "023":
-        if "grandchildren" not in respondent["LIVING_WITH"]:
-          respondent["LIVING_WITH"]["grandchildren"] = []
-        respondent["LIVING_WITH"]["grandchildren"].append(int(other_hh_member["AGE"]))
-      elif other_hh_member["RELATE"] == "024":
-        if "parents" not in respondent["LIVING_WITH"]:
-          respondent["LIVING_WITH"]["parents"] = []
-        if other_hh_member["SEX"] == "01":
-          respondent["LIVING_WITH"]["parents"].append("father")
-        else:
-          respondent["LIVING_WITH"]["parents"].append("mother")
-      elif other_hh_member["RELATE"] == "025":
-        if "siblings" not in respondent["LIVING_WITH"]:
-          respondent["LIVING_WITH"]["siblings"] = 0
-        respondent["LIVING_WITH"]["siblings"] += 1
-      elif other_hh_member["RELATE"] == "026":
-        if "other_relatives" not in respondent["LIVING_WITH"]:
-          respondent["LIVING_WITH"]["other_relatives"] = 0
-        respondent["LIVING_WITH"]["other_relatives"] += 1
-      elif other_hh_member["RELATE"] in ["028", "029", "030"]:
-        if "housemates" not in respondent["LIVING_WITH"]:
-          respondent["LIVING_WITH"]["housemates"] = 0
-        respondent["LIVING_WITH"]["housemates"] += 1
-
+    # Collect information about other members in the household
+    partner = None
+    parents = []
+    ages = {
+      "children": [],
+      "grandchildren": []
+    }
+    n_relationship = {
+      "siblings": 0,
+      "other_relatives": 0,
+      "housemates": 0
+    }
+    other_hh_members = household["persons"][1:]
+    for other_hh_member in other_hh_members:
+      relationship = data_dictionary["RELATE"][other_hh_member["RELATE"]]
+      age = int(other_hh_member["AGE"])
+      if relationship in ["Spouse", "Unmarried partner"]:
+        partner = relationship
+      elif relationship == "Child":
+        ages["children"].append(age)
+      elif relationship == "Grandchild":
+        ages["grandchildren"].append(age)
+      elif relationship == "Parent":
+        parent_sex = data_dictionary["SEX"][other_hh_member["SEX"]]
+        parents.append("mother" if parent_sex == "Female" else "father")
+      elif relationship == "Sibling":
+        n_relationship["siblings"] += 1
+      elif relationship == "Other relative":
+        n_relationship["other_relatives"] += 1
+      elif relationship == "Housemate":
+        n_relationship["housemates"] += 1
+    # Put together a living_with variable, adding fields only where there was relevant info
+    living_with = {}
+    if partner != None:
+      living_with["partner"] = partner
+    for relationship in ages:
+      if len(ages[relationship]) > 0:
+        living_with[relationship] = ages[relationship]
+    if len(parents) > 0:
+      living_with["parents"] = parents
+    for relationship in n_relationship:
+      if n_relationship[relationship] > 0:
+        living_with[relationship] = n_relationship[relationship]
+    # Add the living_with variable to the respondent
+    respondent["LIVING_WITH"] = living_with
+    
 def get_respondents(households):
   return [household["persons"][0] for household in households]
 
 def convert_fields_to_descriptions(persons, data_dictionary):
   for field in RELEVANT_FIELDS_PERSON + RELEVANT_FIELDS_HOUSEHOLD:
-    if (field in data_dictionary):
-      if (data_dictionary[field] != "int"): # if it's a categorical variable
-        for person in persons:
-          code = person[field]
-          person[field] = data_dictionary[field][code]
-      else:
+    if field in data_dictionary:
+      if data_dictionary[field] == "int":
         for person in persons:
           person[field] = int(person[field])
+      elif data_dictionary[field] == "string":
+        break # Nothing to do
+      else: # categorical
+        for person in persons:
+          code = person[field]
+          person[field] = data_dictionary[field][code]        
 
 def recode_activity_field(persons, filepath_activity_map, filepath_activities_by_category):
   activity_map = load_csv(filepath_activity_map)
@@ -140,20 +157,16 @@ def load_csv(filepath):
 ###
 
 filepath_in = DATADIR + "raw/atus16.json"
-households = load_JSON(filepath_in)
-
 filepath_dictionary = DATADIR + "dictionaries/atus16_dictionary2.json"
-data_dictionary = load_JSON(filepath_dictionary)
-
-add_household_fields(households)
-add_living_with_field(households, data_dictionary)
-
-persons = get_respondents(households)
-
-convert_fields_to_descriptions(persons, data_dictionary)
-
 filepath_activity_map = DATADIR + "dictionaries/activities_map3.csv"
 filepath_activities_by_category = DATADIR + "dictionaries/activities_by_category3.json"
+
+households = load_JSON(filepath_in)
+data_dictionary = load_JSON(filepath_dictionary)
+add_household_fields(households)
+add_living_with_field(households, data_dictionary)
+persons = get_respondents(households)
+convert_fields_to_descriptions(persons, data_dictionary)
 recode_activity_field(persons, filepath_activity_map, filepath_activities_by_category)
 
 persons = extract_relevant_fields_only(persons)
