@@ -467,37 +467,55 @@ function create_timeline(person, timeline_container) {
     .call(time_axis);
 
   // Create the activity rects
-  var activity_rects = svg.selectAll(".activity")
+  var activity_rects = svg.selectAll(".activity-container")
     .data(person["activities"], activity => person["ID"] + "_" + activity["ACTNUM"]);
   activity_rects.enter()
+    .append("g")
+      .attr("class", "activity-container")
+      .attr("id", activity => "activity-" + person["ID"] + "-" + activity["ACTNUM"])
     .append('rect')
-    .attr("class", "activity")
-    .attr("id", activity => "activity-" + person["ID"] + "-" + activity["ACTNUM"])
-    .attr("x", activity => time_scale(activity["START"]))
-    .attr("y", y0 - ACTIVITY_RECT_HEIGHT)
-    .attr("width", activity => time_scale(activity["STOP"])-time_scale(activity["START"]))
-    .attr("height", ACTIVITY_RECT_HEIGHT)
-    .attr("rx", ACTIVITY_RECT_RADIUS)
-    .attr("ry", ACTIVITY_RECT_RADIUS)
-    .attr("style", activity => "fill: " + ACTIVITY_COLORS[activity["CATEGORY"]] + ";")
-    .on("mouseover", activityMouseOver)
-    .on("mouseout", activityMouseOut);
+      .attr("class", "activity")
+      .attr("x", activity => time_scale(activity["START"]))
+      .attr("y", y0 - ACTIVITY_RECT_HEIGHT)
+      .attr("width", activity => time_scale(activity["STOP"])-time_scale(activity["START"]))
+      .attr("height", ACTIVITY_RECT_HEIGHT)
+      .attr("rx", ACTIVITY_RECT_RADIUS)
+      .attr("ry", ACTIVITY_RECT_RADIUS)
+      .attr("style", activity => "fill: " + ACTIVITY_COLORS[activity["CATEGORY"]] + ";")
+      .on("mouseover", activityMouseOver)
+      .on("mouseout", activityMouseOut);
 
-    // Mouseover event listeners
-    var annotations_div = timeline_container.select(".annotations");
-    var summary_div = annotations_div.select(".summary");
+  // If there's an activity query, also highlight the corresponding activities
+  var activities_query = d3.select("#activities-searchbox input").node().value.toLowerCase();
+  if (activities_query != "") {
+    var activity_matches = person["activities"].filter(
+      (activity) => activity["ACTIVITY3"].toLowerCase().search(activities_query) != -1);
+    svg.selectAll(".activity-container")
+      .data(activity_matches, activity => person["ID"] + "_" + activity["ACTNUM"])
+        .append("rect")
+          .attr("class", "activity-highlight")
+          .attr("x", activity => time_scale(activity["START"]))
+          .attr("y", y0 + 3)
+          .attr("width", activity => time_scale(activity["STOP"])-time_scale(activity["START"]))
+          .attr("height", 2)
+          .attr("rx", ACTIVITY_RECT_RADIUS)
+          .attr("ry", ACTIVITY_RECT_RADIUS)    
+          .attr("style", activity => "fill: " + ACTIVITY_COLORS[activity["CATEGORY"]] + ";")
+      }
 
-    function activityMouseOver(activity, i) {
-      summary_div.remove();
-      add_activity_description(person, activity, timeline_container, time_scale);
-      add_detailed_profile(person, timeline_container);
-    }
-    
-    function activityMouseOut(activity, i) {
-      remove_activity_description(person, activity);
-      remove_detailed_profile(person);
-      annotations_div.node().appendChild(summary_div.node());
-    }
+  // Mouseover event listeners
+  var annotations_div = timeline_container.select(".annotations");
+  var summary_div = annotations_div.select(".summary");
+  function activityMouseOver(activity, i) {
+    summary_div.remove();
+    add_activity_description(person, activity, timeline_container, time_scale);
+    add_detailed_profile(person, timeline_container);
+  }
+  function activityMouseOut(activity, i) {
+    remove_activity_description(person, activity);
+    remove_detailed_profile(person);
+    annotations_div.node().appendChild(summary_div.node());
+  }
 }
 
 function create_tooltip(id, parent_div, position, arrow_direction) {
