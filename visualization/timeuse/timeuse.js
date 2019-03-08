@@ -61,7 +61,8 @@ const N_RESULTS_DIV = d3.select("#n-results").remove().node();
 const RESULTS_PER_PAGE = 100;
 
 const T_START = parse_time("04:00");
-const TIME_EXTENT = d3.extent([T_START, add_one_day(T_START)]);   // Timelines run from 4am to 4am next day
+const T_STOP = add_one_day(T_START);
+const TIME_EXTENT = [T_START, T_STOP];   // Timelines run from 4am to 4am next day
 const TIMELINE_TEMPLATE = d3.select(".timeline-container").remove().node();
 const TIMELINE_MARGIN_BOTTOM = 20;
 const ACTIVITY_RECT_HEIGHT = 20;
@@ -477,25 +478,42 @@ function create_tooltip(id, parent_div, position, arrow_direction) {
 }
 
 function add_activity_description(person, activity, timeline_container, time_scale) {
+  // Create tooltip
   var id = "activity-description-"  + person["ID"] + "-" + activity["ACTNUM"];
   var parent_div = timeline_container.select(".annotations");
+  var activity_center = (time_scale(activity["START"]) + time_scale(activity["STOP"]))/2;
   var position = {
     "top": -3,
-    "left": (time_scale(activity["START"]) + time_scale(activity["STOP"]))/2 - 21
+    "left": activity_center - 20
   }
   var arrow_direction ="down";
   var tooltip = create_tooltip(id, parent_div, position, arrow_direction);
   tooltip.classed("activity-description", true);
 
+  // Set color to match activity
   var color = HAS_LIGHT_ACTIVITY_COLOR.includes(activity["CATEGORY"]) ? "black" : "white";
   var style = "background: " + ACTIVITY_COLORS[activity["CATEGORY"]] + "; " + 
-    "color: " + color + "; border-width: 0px;";
+    "color: " + color + "; border-width: 0px; ";
   var text = activity["ACTIVITY3"];
-  tooltip.select(".tooltip-arrow")
-    .attr("style", style);
   tooltip.select(".tooltip-body")
     .attr("style", style)
     .text(text);
+  tooltip.select(".tooltip-arrow")
+    .attr("style", style);
+
+  // Reposition (now that I know it's width) so that the arrow always points to the center of the
+  // activity, but the tooltip body relative to the arrow is dependent on when the activity 
+  // is in the day.
+  var tooltip_width = $(tooltip.node()).width();
+  var activity_center_as_percentage = activity_center / time_scale(T_STOP);  
+  var arrow_left = 5 + activity_center_as_percentage*(tooltip_width-25);
+  var tooltip_left = activity_center - arrow_left - 5;
+  tooltip
+    .attr("style", "top: " + position["top"] + "px; " + "left: " + tooltip_left + "px; ");
+  tooltip.select(".tooltip-arrow")
+    .attr("style", style + "left: " + arrow_left + "px; ");
+
+  
 }
 
 function remove_activity_description(person, activity) {

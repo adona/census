@@ -257,7 +257,6 @@ body {
 .tooltip-body {
   position: relative;
   z-index: 2;
-  min-width: 75px;
   background: white;
   border: solid lightgray 1px;
   border-radius: 3px;
