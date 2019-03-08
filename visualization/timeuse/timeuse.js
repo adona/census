@@ -460,7 +460,10 @@ function create_timeline(person, timeline_container) {
 }
 
 function create_tooltip(id, parent_div, position, arrow_direction) {
-  position_string = "top: " + position["top"] + "px; " + "left: " + position["left"] + "px; ";
+  var position_string = "";
+  for (var direction in position)
+    position_string += direction + ": " + position[direction] + "px; ";
+
   var tooltip = parent_div
     .append("div")
       .attr("class", "tooltip")
@@ -482,10 +485,7 @@ function add_activity_description(person, activity, timeline_container, time_sca
   var id = "activity-description-"  + person["ID"] + "-" + activity["ACTNUM"];
   var parent_div = timeline_container.select(".annotations");
   var activity_center = (time_scale(activity["START"]) + time_scale(activity["STOP"]))/2;
-  var position = {
-    "top": -3,
-    "left": activity_center - 20
-  }
+  var position = { "top": -3 };
   var arrow_direction ="down";
   var tooltip = create_tooltip(id, parent_div, position, arrow_direction);
   tooltip.classed("activity-description", true);
@@ -501,9 +501,9 @@ function add_activity_description(person, activity, timeline_container, time_sca
   tooltip.select(".tooltip-arrow")
     .attr("style", style);
 
-  // Reposition (now that I know it's width) so that the arrow always points to the center of the
-  // activity, but the tooltip body relative to the arrow is dependent on when the activity 
-  // is in the day.
+  // Position horizontally (now that I know it's width) so that 
+  // the arrow always points to the center of the activity, 
+  // but the tooltip body relative to the arrow is dependent on when the activity is in the day.
   var tooltip_width = $(tooltip.node()).width();
   var activity_center_as_percentage = activity_center / time_scale(T_STOP);  
   var arrow_left = 5 + activity_center_as_percentage*(tooltip_width-25);
@@ -548,11 +548,21 @@ function add_detailed_profile(person, timeline_container) {
   add_living_with_information(person, profile_card);
   add_work_information(person, profile_card);
 
-  // Adjust vertical position
-  var top = $(timeline_container.node()).offset().top 
-    + $(timeline_container.node()).height() - 24
-    - $(profile_tooltip.node()).height() / 2;
-  profile_tooltip.attr("style", profile_tooltip.attr("style") + "top: " + top + "px; ");
+  // Position vertically (now that I know it's height) so that 
+  // the arrow always points to the center of the timeline, 
+  // but the tooltip body relative to the arrow is dependent on where the timeline is on the page.
+  var tooltip_height = $(profile_tooltip.node()).height();
+  var timeline_center_relative_document = $(timeline_container.node()).offset().top 
+    + $(timeline_container.node()).height() - 32;
+  var timeline_center_relative_window = timeline_center_relative_document - $(window).scrollTop();
+  var timeline_center_relative_window_as_percentage = timeline_center_relative_window/$(window).height();
+  var arrow_top = 5 + timeline_center_relative_window_as_percentage*(tooltip_height-25);
+  var tooltip_top = timeline_center_relative_document - arrow_top - 5;
+  profile_tooltip
+    .attr("style", profile_tooltip.attr("style") + "top: " + tooltip_top + "px; ");
+  profile_tooltip.select(".tooltip-arrow")
+    .attr("style", "top: " + arrow_top + "px; ");
+
 }
 
 function add_living_with_information(person, profile_card) {
