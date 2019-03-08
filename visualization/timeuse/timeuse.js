@@ -57,7 +57,7 @@ const FILTERS_BAR = d3.select("#filters-bar");
 
 const SEARCHBOX_PLACEHOLDER = "e.g. Playing with children, volunteering.. ";
 
-const N_RESULTS_DIV = d3.select("#n-results").remove().node();
+const RESULTS_AND_LEGEND_DIV = d3.select("#results-and-legend").remove().node();
 const RESULTS_PER_PAGE = 100;
 
 const T_START = parse_time("04:00");
@@ -102,7 +102,8 @@ d3.json(url_activities, function(d) {
       preprocess_data();
 
       d3.select("#loading-data").remove();
-      d3.select("#header").node().appendChild(N_RESULTS_DIV);    
+      d3.select("#header").node().appendChild(RESULTS_AND_LEGEND_DIV);
+      initialize_legend();
 
       filter_persons();
 
@@ -306,6 +307,46 @@ function initialize_searchbox() {
     hide_suggestions_box();
     filter_persons();
   }
+}
+
+function initialize_legend() {
+  var show_legend = d3.select("#show-legend");
+  var id = "legend";
+  var parent_div = show_legend;
+  var position = { left: 30 };
+  var arrow_direction = "left";
+  var legend_tooltip = create_tooltip(id, parent_div, position, arrow_direction);
+  var legend = legend_tooltip.select(".tooltip-body");
+  
+  var category_divs = legend.selectAll("div")
+    .data(activities_by_category.slice(0, activities_by_category.length-1))
+    .enter()
+      .append("div");
+
+  category_divs
+    .append("div")
+      .attr("class", "legend-color")
+      .attr("style", category => "background: " + ACTIVITY_COLORS[category["category"]]);
+  
+  category_divs
+    .append("div")
+      .attr("class", "legend-description")
+      .text(category => category["category"]);
+  
+  var tooltip_top = -$(legend_tooltip.node()).height()/2;
+  legend_tooltip
+    .attr("style", legend_tooltip.attr("style") + " top: " + tooltip_top + "px;");
+  
+  legend_tooltip.remove();
+  show_legend
+    .on("mouseover", function() {
+      $(show_legend.node()).append(legend_tooltip.node());
+    })
+    .on("mouseout", function() {
+      legend_tooltip.remove();
+    })
+
+
 }
 
 function decompress_data(blob, callback) {

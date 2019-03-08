@@ -78,6 +78,47 @@ body {
   font-size: 16px;
 }
 
+#n-results, #legend-text {
+  display: inline-block;
+  width: 49.5%;
+}
+
+/* Legend */
+
+#legend-text {
+  text-align: right;
+  font-size: 12px;
+}
+
+#show-legend {
+  position: relative;
+  display: inline-block;
+  background: #EFEFEF;
+  padding: 0px 3px;
+  border-radius: 7px;
+}
+
+#legend {
+  width: 185px;
+}
+
+#legend .tooltip-body {
+  text-align: left;
+}
+
+#legend .legend-color {
+  display: inline-block;
+  vertical-align: middle;
+  width: 30px;
+  height: 15px;
+  margin: 4px 15px 4px 5px;
+}
+
+#legend .legend-description {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 /* Filters */
 
 #filters-bar {
@@ -251,7 +292,7 @@ body {
 }
 
 .tooltip-arrow[arrow-direction="left"] {
-  bottom: 50%;
+  top: 50%;
   left: -5px;
 }
 
