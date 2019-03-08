@@ -16,6 +16,7 @@
 body {
   width: var(--body-width);
   margin: 0px 100px;
+  overflow-x: hidden;
   overflow-y: scroll;
   font-family: Helvetica;
 }
