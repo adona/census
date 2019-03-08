@@ -274,6 +274,12 @@ body {
   min-height: 75px;
 }
 
+/* Activity descriptions */
+
+.activity-description .tooltip-body {
+  white-space: nowrap;
+}
+
 /* Person profile */
 
 .profile-card {
