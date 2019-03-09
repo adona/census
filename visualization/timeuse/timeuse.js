@@ -86,36 +86,34 @@ const PROFILE_CARD_TEMPLATE = d3.select(".profile-card").remove().node();
 var activities_by_category, persons, filtered_persons, npersons_visible;
 
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
-var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_small5.json.zip";
+var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json.gz";
 
-d3.json(url_activities, function(d) {
-  activities_by_category = d; // Save to global variable (for easier debugging)  
+$.getJSON(url_activities)
+  .done(function(d) {
+    activities_by_category = d; // Save to global variable (for easier debugging)
+
+    initialize_header();
+
+    $.getJSON(url_data)
+      .done(function(d) {
+        persons = d; // Save to global variable (for easier debugging)
+
+        preprocess_data();
+
+        d3.select("#loading-data").remove();
+        d3.select("#header").node().appendChild(RESULTS_AND_LEGEND_DIV);
+        initialize_legend();
   
-  initialize_header();
-
-  console.log("Loading data..");
-  fetch(url_data)
-    .then(response => response.blob())
-    .then(blob => decompress_data(blob, function(d) {
-      persons = d; // Save to global variable (for easier debugging)
-
-      preprocess_data();
-
-      d3.select("#loading-data").remove();
-      d3.select("#header").node().appendChild(RESULTS_AND_LEGEND_DIV);
-      initialize_legend();
-
-      filter_persons();
-
-      $(window).on('scroll', function() {
-        var scrollPercent = ($(window).scrollTop() / 
-          ($(document).height() - $(window).height())) * 100;
-        if (scrollPercent >= 80)
-          add_next_results_page();
+        filter_persons();
+  
+        $(window).on('scroll', function() {
+          var scrollPercent = ($(window).scrollTop() / 
+            ($(document).height() - $(window).height())) * 100;
+          if (scrollPercent >= 80)
+            add_next_results_page();
+        });  
       });
-    }));
   });
-
 
 function initialize_header() {
   initialize_filters();
