@@ -347,18 +347,6 @@ function initialize_legend() {
 
 }
 
-function decompress_data(blob, callback) {
-  console.log("Decompressing data..");
-  zip.createReader(new zip.BlobReader(blob), function(reader) {
-    reader.getEntries(function(entries) {
-      entries[0].getData(new zip.TextWriter(), function(d) {
-        d = JSON.parse(d);
-        callback(d);
-      });
-    });
-  });
-}
-
 function preprocess_data() {
   console.log("Preprocessing data..")
   for (var i=0; i<persons.length; i++) {
