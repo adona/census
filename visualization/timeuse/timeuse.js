@@ -269,14 +269,14 @@ function initialize_searchbox() {
     filtered_activities_by_category = [];
     activities_by_category.forEach(function(category) {
       var filtered_category_activities = category["activities"].filter(activity => is_match(activity["activity"]));
-      if ((filtered_category_activities.length > 0) || (is_match(category["category"])))
-        filtered_activities_by_category.push({
-          "category": category["category"],
-          "is_match": category["is_match"],
-          "filter_condition": category["filter_condition"],
-          "n_filtered_persons": category["n_filtered_persons"],
-          "activities": filtered_category_activities
-        });
+      if ((filtered_category_activities.length > 0) || (is_match(category["category"]))) {
+        var filtered_category = {};
+        for (var field in category)
+          if (field != "activities")
+            filtered_category[field] = category[field];
+        filtered_category["activities"] = filtered_category_activities;
+        filtered_activities_by_category.push(filtered_category);
+      }
     });
 
     update_suggestions();
@@ -300,7 +300,8 @@ function initialize_searchbox() {
     category_divs
       .append("span")
         .attr("class", "match-count")
-        .text(category => " [" + category["n_filtered_persons"] + "]");
+        // .text(category => " [" + category["n_filtered_persons"] + " - " + category["perc_filtered_persons"] + "%]");
+        .text(category => " [" + category["perc_filtered_persons"] + "%]");
       
     var activity_divs = category_containers
       .selectAll(".suggestion-activity")
@@ -314,9 +315,9 @@ function initialize_searchbox() {
     activity_divs
       .append("span")
         .attr("class", "match-count")
-        .text(activity => " [" + activity["n_filtered_persons"] + "]");
+        // .text(activity => " [" + activity["n_filtered_persons"] + " - " + activity["perc_filtered_persons"] + "%]");
+        .text(activity => " [" + activity["perc_filtered_persons"] + "%]");
     
-
     suggestions_box
       .selectAll("li")
       .on("mouseover", (d, i) => update_selection(i))
@@ -479,11 +480,17 @@ function annotate_activities_with_n_filtered_persons() {
     })
   })
 
+  var n_filtered_persons = filtered_persons.length;
   activities_by_category.forEach(category => {
     category["n_filtered_persons"] = persons_matching_category[category["category"]].size;
-    category["activities"].forEach(activity => activity["n_filtered_persons"] = persons_matching_activity[activity["activity"]].size);
+    category["perc_filtered_persons"] = Math.ceil(category["n_filtered_persons"]/n_filtered_persons*100);
+    category["activities"].forEach(activity => {
+      activity["n_filtered_persons"] = persons_matching_activity[activity["activity"]].size;
+      activity["perc_filtered_persons"] = Math.ceil(activity["n_filtered_persons"]/n_filtered_persons*100);
+    });
   });
   activities_by_category[0]["n_filtered_persons"] = filtered_persons.length;
+  activities_by_category[0]["perc_filtered_persons"] = 100;
 }
 
 function visualize_filtered_persons() {
