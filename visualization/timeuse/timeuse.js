@@ -274,6 +274,7 @@ function initialize_searchbox() {
           "category": category["category"],
           "is_match": category["is_match"],
           "filter_condition": category["filter_condition"],
+          "n_filtered_persons": category["n_filtered_persons"],
           "activities": filtered_category_activities
         });
     });
@@ -293,7 +294,7 @@ function initialize_searchbox() {
     category_divs
       .append("li")
       .attr("class", "suggestion-category")
-      .text(category => category["category"]);
+      .text(category => category["category"] + " [" + category["n_filtered_persons"] + "]");
     
     category_divs
       .selectAll(".suggestion-activity")
@@ -301,7 +302,7 @@ function initialize_searchbox() {
       .enter()
         .append("li")
         .attr("class", "suggestion-activity")
-        .text(activity => activity["activity"]);
+        .text(activity => activity["activity"] + " [" + activity["n_filtered_persons"] + "]");
 
     suggestions_box
       .selectAll("li")
@@ -340,9 +341,8 @@ function initialize_searchbox() {
       selected_activity = activities_by_category[0];  // All Activities
       input.node().value = "";
     } else {
-      var selected_div = suggestions_box.select(".selected");
-      selected_activity = selected_div.data()[0];
-      input.node().value = selected_div.text();
+      selected_activity = suggestions_box.select(".selected").data()[0];
+      input.node().value = selected_activity["category"] != null ? selected_activity["category"] : selected_activity["activity"];
     }
 
     is_activity_match = selected_activity["is_match"];
@@ -427,16 +427,50 @@ function preprocess_timeline(person) {
 }
 
 function filter_persons(updated_filter_id, updated_filter_condition) {
+  // Update the filters
   if (updated_filter_id != null)
     active_filter_conditions[updated_filter_id] = updated_filter_condition;
 
+  // Filter
   filtered_persons = persons;
+  // Filter through everything but the activity filter (for now)
   for (var filter_id in active_filter_conditions)
-    filtered_persons = filtered_persons.filter(active_filter_conditions[filter_id]);
+    if (filter_id != "activities-searchbox")
+      filtered_persons = filtered_persons.filter(active_filter_conditions[filter_id]);
+  // Annotate the activities with # of filtered persons matching each activity
+  if (updated_filter_id != "activities-searchbox")
+    annotate_activities_with_n_filtered_persons();
+  // Now filter through the activity as well
+  filtered_persons = filtered_persons.filter(active_filter_conditions["activities-searchbox"]);
 
+  // Update the # of results
   d3.select("#n-results-placeholder").text(filtered_persons.length);
 
+  // Visualize results!
   visualize_filtered_persons();
+}
+
+function annotate_activities_with_n_filtered_persons() {
+  console.log("Annotating activities wtih n_filtered_persons");
+  persons_matching_category = {};
+  persons_matching_activity = {};
+  activities_by_category.forEach(category => {
+    persons_matching_category[category["category"]] = new Set();
+    category["activities"].forEach(activity => persons_matching_activity[activity["activity"]] = new Set());
+  });
+
+  filtered_persons.forEach(person => {
+    person["activities"].forEach(activity => {
+      persons_matching_category[activity["CATEGORY"]].add(person["ID"]);
+      persons_matching_activity[activity["ACTIVITY3"]].add(person["ID"]);
+    })
+  })
+
+  activities_by_category.forEach(category => {
+    category["n_filtered_persons"] = persons_matching_category[category["category"]].size;
+    category["activities"].forEach(activity => activity["n_filtered_persons"] = persons_matching_activity[activity["activity"]].size);
+  });
+  activities_by_category[0]["n_filtered_persons"] = filtered_persons.length;
 }
 
 function visualize_filtered_persons() {
