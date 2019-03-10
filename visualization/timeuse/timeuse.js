@@ -85,7 +85,8 @@ const PROFILE_CARD_TEMPLATE = d3.select(".profile-card").remove().node();
 
 var persons, activities_by_category,
   active_filter_conditions, is_activity_match,
-  filtered_persons, npersons_visible;
+  filtered_persons, npersons_visible,
+  activity_dropdown_is_visible = false;
 
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json.gz";
@@ -253,6 +254,7 @@ function initialize_searchbox() {
       .attr("class", "suggestions-box")
       .attr("style", "top: " + suggestion_box_top + "px;");
     filter_suggestions("");
+    activity_dropdown_is_visible = true;
   }
   
   function hide_suggestions_box() {
@@ -260,6 +262,7 @@ function initialize_searchbox() {
     suggestions_box.remove();
     suggestions_box = null;
     idx_selected = null;
+    activity_dropdown_is_visible = false;
   }
 
   function filter_suggestions(query) {
@@ -617,6 +620,8 @@ function create_tooltip(id, parent_div, position, arrow_direction) {
 }
 
 function add_activity_description(person, activity, timeline_container, time_scale) {
+  if (activity_dropdown_is_visible) return;
+
   // Create tooltip
   var id = "activity-description-"  + person["ID"] + "-" + activity["ACTNUM"];
   var parent_div = timeline_container.select(".annotations");
@@ -657,6 +662,8 @@ function remove_activity_description(person, activity) {
 }
 
 function add_detailed_profile(person, timeline_container) {
+  if (activity_dropdown_is_visible) return;
+
   // Create the tooltip
   var id = "person-profile-"  + person["ID"];
   var parent_div = d3.select("#sidebar");
