@@ -83,8 +83,9 @@ const HAS_LIGHT_ACTIVITY_COLOR = ["Sleep", "Personal Care", "Missing data"];
 
 const PROFILE_CARD_TEMPLATE = d3.select(".profile-card").remove().node();
 
-var persons, filtered_persons, npersons_visible, 
-  activities_by_category, is_activity_match;
+var persons, activities_by_category,
+  active_filter_conditions, is_activity_match,
+  filtered_persons, npersons_visible;
 
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json.gz";
@@ -157,6 +158,7 @@ function initialize_header() {
 }
 
 function initialize_filters() {
+  active_filter_conditions = {};
   for(var row=0; row<FILTER_MODELS.length; row++) {
     var filters_row = FILTERS_BAR.append("div")
       .attr("class", "filters-row")
@@ -168,6 +170,7 @@ function initialize_filters() {
 
 function create_filter(filter_model, filters_row) {
   var filter_id = filter_model["filter-id"];
+  active_filter_conditions[filter_id] = filter_model["options"][0]["filter_condition"];
 
   var filter = filters_row.append("form")
     .attr("class", "filter")
@@ -190,7 +193,10 @@ function create_filter(filter_model, filters_row) {
     .attr("type", "radio")
     .attr("name", filter_id)
     .attr("id", option => filter_id+"-"+option["id"])
-    .on("change", filter_persons);
+    .on("change", function() {
+      var filter_condition = filter.select(".filter-option input:checked").data()[0]["filter_condition"];
+      filter_persons(filter_id, filter_condition);
+    });
 
   options.append("label")
     .attr("for", option => filter_id+"-"+option["id"])
@@ -206,6 +212,9 @@ function initialize_searchbox() {
   searchbox.append("div")
     .attr("class", "filter-name")
     .text("Activity");
+
+  active_filter_conditions["activities-searchbox"] = activities_by_category[0]["filter_condition"];
+  is_activity_match = activities_by_category[0]["is_match"];
 
   var input = searchbox.append("input")
   .attr("type", "text")
@@ -326,12 +335,24 @@ function initialize_searchbox() {
   }
 
   function completeSearch() {
-    input.node().value = (idx_selected == null || idx_selected == 0) ? "" : suggestions_box.select(".selected").text();
+    var selected_activity;
+    if (idx_selected == null) {
+      selected_activity = activities_by_category[0];  // All Activities
+      input.node().value = "";
+    } else {
+      var selected_div = suggestions_box.select(".selected");
+      selected_activity = selected_div.data()[0];
+      input.node().value = selected_div.text();
+    }
+
+    is_activity_match = selected_activity["is_match"];
+    filter_condition = selected_activity["filter_condition"]
+    filter_persons("activities-searchbox", filter_condition);
+    
     input.node().blur();
   }
 
   function onBlur() {
-    filter_persons();
     hide_suggestions_box();
   }
 }
@@ -405,23 +426,13 @@ function preprocess_timeline(person) {
   }
 }
 
-function filter_persons() {
-  var checked_inputs = d3.selectAll(".filter-option input:checked"),
-      checked_options = checked_inputs.select(function() { return this.parentNode; });
-  var filter_conditions = checked_options.data().map(option => option["filter_condition"]);
-  
-  var selected_activity = d3.select("#activities-searchbox .selected");
-  if (selected_activity.node() != null) {
-    selected_activity = selected_activity.data()[0];
-    filter_conditions.push(selected_activity["filter_condition"]);
-    is_activity_match = selected_activity["is_match"];
-  } else {
-    is_activity_match = null;
-  }
+function filter_persons(updated_filter_id, updated_filter_condition) {
+  if (updated_filter_id != null)
+    active_filter_conditions[updated_filter_id] = updated_filter_condition;
 
   filtered_persons = persons;
-  for (var i=0; i<filter_conditions.length; i++)
-    filtered_persons = filtered_persons.filter(filter_conditions[i]);
+  for (var filter_id in active_filter_conditions)
+    filtered_persons = filtered_persons.filter(active_filter_conditions[filter_id]);
 
   d3.select("#n-results-placeholder").text(filtered_persons.length);
 
@@ -497,20 +508,18 @@ function create_timeline(person, timeline_container) {
       .on("mouseout", activityMouseOut);
 
   // If the results are filtered by activity, also highlight the matching activities
-  if (is_activity_match != null) {
-    matching_activities = person["activities"].filter(is_activity_match);
-    svg.selectAll(".activity-container")
-      .data(matching_activities, activity => person["ID"] + "_" + activity["ACTNUM"])
-        .append("rect")
-          .attr("class", "activity-highlight")
-          .attr("x", activity => time_scale(activity["START"]))
-          .attr("y", y0 + 3)
-          .attr("width", activity => time_scale(activity["STOP"])-time_scale(activity["START"]))
-          .attr("height", 5)
-          .attr("rx", ACTIVITY_RECT_RADIUS)
-          .attr("ry", ACTIVITY_RECT_RADIUS)    
-          .attr("style", activity => "fill: " + ACTIVITY_COLORS[activity["CATEGORY"]] + ";")
-  }
+  matching_activities = person["activities"].filter(is_activity_match);
+  svg.selectAll(".activity-container")
+    .data(matching_activities, activity => person["ID"] + "_" + activity["ACTNUM"])
+      .append("rect")
+        .attr("class", "activity-highlight")
+        .attr("x", activity => time_scale(activity["START"]))
+        .attr("y", y0 + 3)
+        .attr("width", activity => time_scale(activity["STOP"])-time_scale(activity["START"]))
+        .attr("height", 5)
+        .attr("rx", ACTIVITY_RECT_RADIUS)
+        .attr("ry", ACTIVITY_RECT_RADIUS)    
+        .attr("style", activity => "fill: " + ACTIVITY_COLORS[activity["CATEGORY"]] + ";")
 
   // Mouseover event listeners
   var annotations_div = timeline_container.select(".annotations");
