@@ -7,49 +7,49 @@ const WEEKEND = ["Saturday", "Sunday"];
 const FILTER_GENDER = { "filter-id": "filter-gender", 
   "name": "Gender",
   "options":
-    [{"id": "all", "label": "All", "condition": p => true},
-     {"id": "men", "label": "Men", "condition": p => p["SEX"] == "Male"},
-     {"id": "women", "label": "Women", "condition": p => p["SEX"] == "Female"}]};
+    [{"id": "all", "label": "All", "filter_condition": p => true},
+     {"id": "men", "label": "Men", "filter_condition": p => p["SEX"] == "Male"},
+     {"id": "women", "label": "Women", "filter_condition": p => p["SEX"] == "Female"}]};
 const FILTER_AGE = { "filter-id": "filter-age",
   "name": "Age",
   "options":
-     [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "15_24", "label": "15-24", "condition": p => p["AGE"] <= 24},
-      {"id": "25-44", "label": "25-64", "condition": p => p["AGE"] >= 25 && p["AGE"] <=64},
-      {"id": "65_plus", "label": "65+", "condition": p => p["AGE"] >= 65}]};
+     [{"id": "all", "label": "All", "filter_condition": p => true},
+      {"id": "15_24", "label": "15-24", "filter_condition": p => p["AGE"] <= 24},
+      {"id": "25-44", "label": "25-64", "filter_condition": p => p["AGE"] >= 25 && p["AGE"] <=64},
+      {"id": "65_plus", "label": "65+", "filter_condition": p => p["AGE"] >= 65}]};
 const FILTER_RACE = { "filter-id": "filter-race", 
   "name": "Race",
   "options":
-     [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "white", "label": "White", "condition": p => p["RACE"] == "White"},
-      {"id": "black", "label": "Black", "condition": p => p["RACE"] == "Black"},
-      {"id": "other", "label": "Other", "condition": p => !(["White", "Black"].includes(p["RACE"]))}]};
+     [{"id": "all", "label": "All", "filter_condition": p => true},
+      {"id": "white", "label": "White", "filter_condition": p => p["RACE"] == "White"},
+      {"id": "black", "label": "Black", "filter_condition": p => p["RACE"] == "Black"},
+      {"id": "other", "label": "Other", "filter_condition": p => !(["White", "Black"].includes(p["RACE"]))}]};
 const FILTER_KIDS = { "filter-id": "filter-kids", 
   "name": "Children",
   "options":
-     [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "none", "label": "No", "condition": p => p["HH_NUMOWNKIDS"] == 0},
-      {"id": "1_or_more", "label": "Yes", "condition": p => p["HH_NUMOWNKIDS"] > 0}]};
+     [{"id": "all", "label": "All", "filter_condition": p => true},
+      {"id": "none", "label": "No", "filter_condition": p => p["HH_NUMOWNKIDS"] == 0},
+      {"id": "1_or_more", "label": "Yes", "filter_condition": p => p["HH_NUMOWNKIDS"] > 0}]};
 const FILTER_EDU = { "filter-id": "filter-edu", 
   "name": "Education",
   "options":
-     [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "highschool", "label": "High school", "condition": p => EDU_HIGHSCHOOL_OR_LESS.includes(p["EDUC"])},
-      {"id": "college", "label": "College", "condition": p => p["EDUC"] == EDU_BACHELORS}, 
-      {"id": "masters_phd", "label": "Masters / Ph.D.", "condition": p => EUD_MASTERS_PHD.includes(p["EDUC"])}]};
+     [{"id": "all", "label": "All", "filter_condition": p => true},
+      {"id": "highschool", "label": "High school", "filter_condition": p => EDU_HIGHSCHOOL_OR_LESS.includes(p["EDUC"])},
+      {"id": "college", "label": "College", "filter_condition": p => p["EDUC"] == EDU_BACHELORS}, 
+      {"id": "masters_phd", "label": "Masters / Ph.D.", "filter_condition": p => EUD_MASTERS_PHD.includes(p["EDUC"])}]};
 const FILTER_EMPLOYMENT = { "filter-id": "filter-employement", 
   "name": "Employment",
   "options":
-     [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "employed", "label": "Employed", "condition": p => p["EMPSTAT"] == "Working"},
-      {"id": "unemployed", "label": "Unemployed", "condition": p => p["EMPSTAT"] == "Unemployed"},
-      {"id": "not_looking", "label": "Not Looking", "condition": p => p["EMPSTAT"] == "Not in labor force"}]};
+     [{"id": "all", "label": "All", "filter_condition": p => true},
+      {"id": "employed", "label": "Employed", "filter_condition": p => p["EMPSTAT"] == "Working"},
+      {"id": "unemployed", "label": "Unemployed", "filter_condition": p => p["EMPSTAT"] == "Unemployed"},
+      {"id": "not_looking", "label": "Not Looking", "filter_condition": p => p["EMPSTAT"] == "Not in labor force"}]};
 const FILTER_DAY = { "filter-id": "filter-day", 
   "name": "Day of week",
   "options":
-     [{"id": "all", "label": "All", "condition": p => true},
-      {"id": "weekday", "label": "M-F", "condition": p => WEEKDAY.includes(p["DAY"])},
-      {"id": "weekend", "label": "S-S", "condition": p => WEEKEND.includes(p["DAY"])}]};
+     [{"id": "all", "label": "All", "filter_condition": p => true},
+      {"id": "weekday", "label": "M-F", "filter_condition": p => WEEKDAY.includes(p["DAY"])},
+      {"id": "weekend", "label": "S-S", "filter_condition": p => WEEKEND.includes(p["DAY"])}]};
 const FILTER_MODELS = 
   [[FILTER_GENDER, FILTER_AGE, FILTER_RACE, FILTER_KIDS], 
    [FILTER_EDU, FILTER_EMPLOYMENT, FILTER_DAY]];
@@ -83,7 +83,8 @@ const HAS_LIGHT_ACTIVITY_COLOR = ["Sleep", "Personal Care", "Missing data"];
 
 const PROFILE_CARD_TEMPLATE = d3.select(".profile-card").remove().node();
 
-var activities_by_category, persons, filtered_persons, npersons_visible;
+var persons, filtered_persons, npersons_visible, 
+  activities_by_category, is_activity_match;
 
 var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
 var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json.gz";
@@ -92,6 +93,7 @@ $.getJSON(url_activities)
   .done(function(d) {
     activities_by_category = d; // Save to global variable (for easier debugging)
 
+    preprocess_activities();
     initialize_header();
 
     $.getJSON(url_data)
@@ -114,6 +116,29 @@ $.getJSON(url_activities)
         });  
       });
   });
+
+function preprocess_activities() {
+  // Annotate each category and activity with:
+  // - an "is_match" function where is_match(other_activity) is true iff other_activity belongs to that category / is equal to that activity
+  // - a "filter_condition" function where filter_condition(person) is true iff that person's timeline contains at least one matching activity
+  // These will be used for activity filtering, and highlighting the matches in the filtered results.
+  activities_by_category.forEach(function(category) {
+    var is_category_match = activity => activity["CATEGORY"] == category["category"];
+    category["is_match"] = is_category_match;
+    category["filter_condition"] = person => (person["activities"].filter(activity => is_category_match(activity)).length > 0);
+    
+
+    category["activities"] = 
+      category["activities"].map(function(activity) {
+        var is_activity_match = other_activity => other_activity["ACTIVITY3"] == activity;
+        return {
+          "activity": activity,
+          "is_match": is_activity_match,
+          "filter_condition": person => (person["activities"].filter(other_activity => is_activity_match(other_activity)).length > 0)
+        };
+      });
+  });
+}
 
 function initialize_header() {
   initialize_filters();
@@ -202,8 +227,8 @@ function initialize_searchbox() {
   });
   
   var suggestions_box, 
-    filtered_activities_by_category, filtered_activities, 
-    idx_selected;
+    filtered_activities_by_category, 
+    n_filtered_suggestions, idx_selected;
 
   function show_suggestions_box() {
     if (suggestions_box != null) return;
@@ -222,24 +247,20 @@ function initialize_searchbox() {
   }
 
   function filter_suggestions(query) {
-    if (query == "") {
-      filtered_activities_by_category = activities_by_category;
-    } else {
-      filtered_activities_by_category = [];
-      for (var i=0; i<activities_by_category.length; i++) {
-        var category = activities_by_category[i];
-        var filtered_category_activities = category["activities"].filter(activity => 
-          activity.toLowerCase().search(query.toLowerCase()) != -1);
-        if (filtered_category_activities.length > 0)
-          filtered_activities_by_category.push({
-            "category": category["category"],
-            "activities": filtered_category_activities
-          });
-      }
-    }
-    filtered_activities = [];
-    for (var i=0; i<filtered_activities_by_category.length; i++)
-      filtered_activities = filtered_activities.concat(filtered_activities_by_category[i]["activities"]);
+    query = query.toLowerCase();
+    var is_match = suggestion => suggestion.toLowerCase().includes(query);
+
+    filtered_activities_by_category = [];
+    activities_by_category.forEach(function(category) {
+      var filtered_category_activities = category["activities"].filter(activity => is_match(activity["activity"]));
+      if ((filtered_category_activities.length > 0) || (is_match(category["category"])))
+        filtered_activities_by_category.push({
+          "category": category["category"],
+          "filter_condition": category["filter_condition"],
+          "is_match": category["is_match"],
+          "activities": filtered_category_activities
+        });
+    });
 
     update_suggestions();
   }
@@ -264,13 +285,15 @@ function initialize_searchbox() {
       .enter()
         .append("li")
         .attr("class", "suggestion-activity")
-        .text(activity => activity);
+        .text(activity => activity["activity"]);
 
     suggestions_box
-      .selectAll(".suggestion-activity")
+      .selectAll("li")
       .on("mouseover", (d, i) => update_selection(i))
       .on("mouseout", () => update_selection(null))
       .on("mousedown", completeSearch);
+    
+    n_suggestions = suggestions_box.selectAll("li").nodes().length;
   }
 
   function update_selection_by_arrowpress(arrowPressed) {
@@ -278,16 +301,16 @@ function initialize_searchbox() {
     if (arrowPressed == "ArrowDown")
       new_idx = idx_selected == null? 0 : idx_selected+1;
     else 
-      new_idx = idx_selected == null? filtered_activities.length-1 : idx_selected-1;
+      new_idx = idx_selected == null? n_filtered_suggestions-1 : idx_selected-1;
     // Check that it's not out of bounds
-    if ((new_idx < 0) || (new_idx >= filtered_activities.length))
+    if ((new_idx < 0) || (new_idx >= n_filtered_suggestions))
       new_idx = null;
     // Update the selection
     update_selection(new_idx);
   }
 
   function update_selection(new_idx) {
-    var lis = suggestions_box.selectAll(".suggestion-activity").nodes();
+    var lis = suggestions_box.selectAll("li").nodes();
     if (idx_selected != null) 
       lis[idx_selected].classList.remove("selected");
     if(new_idx != null)
@@ -296,14 +319,13 @@ function initialize_searchbox() {
   }
 
   function completeSearch() {
-    if (idx_selected != null)
-      input.node().value = filtered_activities[idx_selected];
+    input.node().value = (idx_selected != null) ? suggestions_box.select(".selected").text() : "";
     input.node().blur();
   }
 
   function onBlur() {
-    hide_suggestions_box();
     filter_persons();
+    hide_suggestions_box();
   }
 }
 
@@ -348,7 +370,6 @@ function initialize_legend() {
 }
 
 function preprocess_data() {
-  console.log("Preprocessing data..")
   for (var i=0; i<persons.length; i++) {
     person = persons[i];
     person["ID"] = i;
@@ -380,23 +401,20 @@ function preprocess_timeline(person) {
 function filter_persons() {
   var checked_inputs = d3.selectAll(".filter-option input:checked"),
       checked_options = checked_inputs.select(function() { return this.parentNode; });
-  var conditions = checked_options.data().map(option => option["condition"]);
+  var filter_conditions = checked_options.data().map(option => option["filter_condition"]);
+  
+  var selected_activity = d3.select("#activities-searchbox .selected");
+  if (selected_activity.node() != null) {
+    selected_activity = selected_activity.data()[0];
+    filter_conditions.push(selected_activity["filter_condition"]);
+    is_activity_match = selected_activity["is_match"];
+  } else {
+    is_activity_match = null;
+  }
+
   filtered_persons = persons;
-  for (var i=0; i<conditions.length; i++)
-    filtered_persons = filtered_persons.filter(conditions[i]);
-
-
-  var activities_query = d3.select("#activities-searchbox input").node().value.toLowerCase();
-  filtered_persons = filtered_persons.filter(person => {
-    var has_activity = false;
-    var activities = person["activities"];
-    for (var i=0; i<activities.length; i++)
-      if (activities[i]["ACTIVITY3"].toLowerCase().search(activities_query) != -1) {
-        has_activity = true;
-        break;
-      }
-    return has_activity;
-  });
+  for (var i=0; i<filter_conditions.length; i++)
+    filtered_persons = filtered_persons.filter(filter_conditions[i]);
 
   d3.select("#n-results-placeholder").text(filtered_persons.length);
 
@@ -471,23 +489,21 @@ function create_timeline(person, timeline_container) {
       .on("mouseover", activityMouseOver)
       .on("mouseout", activityMouseOut);
 
-  // If there's an activity query, also highlight the corresponding activities
-  var activities_query = d3.select("#activities-searchbox input").node().value.toLowerCase();
-  if (activities_query != "") {
-    var activity_matches = person["activities"].filter(
-      (activity) => activity["ACTIVITY3"].toLowerCase().search(activities_query) != -1);
+  // If the results are filtered by activity, also highlight the matching activities
+  if (is_activity_match != null) {
+    matching_activities = person["activities"].filter(is_activity_match);
     svg.selectAll(".activity-container")
-      .data(activity_matches, activity => person["ID"] + "_" + activity["ACTNUM"])
+      .data(matching_activities, activity => person["ID"] + "_" + activity["ACTNUM"])
         .append("rect")
           .attr("class", "activity-highlight")
           .attr("x", activity => time_scale(activity["START"]))
           .attr("y", y0 + 3)
           .attr("width", activity => time_scale(activity["STOP"])-time_scale(activity["START"]))
-          .attr("height", 2)
+          .attr("height", 5)
           .attr("rx", ACTIVITY_RECT_RADIUS)
           .attr("ry", ACTIVITY_RECT_RADIUS)    
           .attr("style", activity => "fill: " + ACTIVITY_COLORS[activity["CATEGORY"]] + ";")
-      }
+  }
 
   // Mouseover event listeners
   var annotations_div = timeline_container.select(".annotations");
