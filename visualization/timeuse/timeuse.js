@@ -585,16 +585,13 @@ function create_timeline(person, timeline_container) {
 
   // Mouseover event listeners
   var annotations_div = timeline_container.select(".annotations");
-  var summary_div = annotations_div.select(".summary");
   function activityMouseOver(activity, i) {
-    summary_div.remove();
     add_activity_description(person, activity, timeline_container, time_scale);
     add_detailed_profile(person, timeline_container);
   }
   function activityMouseOut(activity, i) {
     remove_activity_description(person, activity);
     remove_detailed_profile(person);
-    annotations_div.node().appendChild(summary_div.node());
   }
 }
 
@@ -654,11 +651,21 @@ function add_activity_description(person, activity, timeline_container, time_sca
   tooltip.select(".tooltip-arrow")
     .attr("style", style + "left: " + arrow_left + "px; ");
 
-  
+  // Detect collisions with either the demographics or day, and, if needed, set visibility: hidden;
+  var demographics = timeline_container.select(".demographics");
+  var day = timeline_container.select(".day");
+  if (divs_overlap(tooltip.node(), demographics.node()))
+    demographics.style("visibility", "hidden");
+  if (divs_overlap(tooltip.node(), day.node()))
+    day.style("visibility", "hidden");
+
 }
 
 function remove_activity_description(person, activity) {
-  d3.select("#activity-description-" + person["ID"] + "-" + activity["ACTNUM"]).remove();
+  timeline_container = d3.select(".timeline-container[id=timeline-"+person["ID"]+"]");
+  timeline_container.select(".activity-description").remove();
+  timeline_container.select(".demographics").style("visibility", "visible");
+  timeline_container.select(".day").style("visibility", "visible");
 }
 
 function add_detailed_profile(person, timeline_container) {
@@ -824,4 +831,25 @@ function list_to_string(list) {
       string += list[list.length-1];
   }
   return string;
+}
+
+function divs_overlap(div1, div2) {
+  div1 = $(div1);
+  div2 = $(div2);
+
+  var div1_x1 = div1.offset().left;
+  var div1_y1 = div1.offset().top;
+  var div1_w = div1.outerWidth(true);
+  var div1_h = div1.outerHeight(true);
+  var div1_x2 = div1_x1 + div1_w;
+  var div1_y2 = div1_y1 + div1_h;
+
+  var div2_x1 = div2.offset().left;
+  var div2_y1 = div2.offset().top;
+  var div2_w = div2.outerWidth(true);
+  var div2_h = div2.outerHeight(true);
+  var div2_x2 = div2_x1 + div2_w;
+  var div2_y2 = div2_y1 + div2_h;
+  
+  return !(div1_y2 < div2_y1 || div1_y1 > div2_y2 || div1_x2 < div2_x1 || div1_x1 > div2_x2);
 }

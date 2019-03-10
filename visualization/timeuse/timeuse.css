@@ -248,12 +248,14 @@ body {
   position: absolute;
   top: 15px;
   left: 0px;
+  padding-right: 10px;
 }
 
 .timeline-container .day {
   position: absolute;
   top: 15px;
   right: 0px;
+  padding-left: 10px;
 }
 
 .timeline-container .timeline {
