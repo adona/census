@@ -138,6 +138,13 @@ function preprocess_activities() {
         };
       });
   });
+  // Add an "All Activities" at the top (corresponding to no filtering)
+  activities_by_category.unshift({
+    "category": "All Activities",
+    "is_match": activity => false,
+    "filter_condition": person => true,
+    "activities": []
+  });
 }
 
 function initialize_header() {
@@ -256,8 +263,8 @@ function initialize_searchbox() {
       if ((filtered_category_activities.length > 0) || (is_match(category["category"])))
         filtered_activities_by_category.push({
           "category": category["category"],
-          "filter_condition": category["filter_condition"],
           "is_match": category["is_match"],
+          "filter_condition": category["filter_condition"],
           "activities": filtered_category_activities
         });
     });
@@ -319,7 +326,7 @@ function initialize_searchbox() {
   }
 
   function completeSearch() {
-    input.node().value = (idx_selected != null) ? suggestions_box.select(".selected").text() : "";
+    input.node().value = (idx_selected == null || idx_selected == 0) ? "" : suggestions_box.select(".selected").text();
     input.node().blur();
   }
 
@@ -339,7 +346,7 @@ function initialize_legend() {
   var legend = legend_tooltip.select(".tooltip-body");
   
   var category_divs = legend.selectAll("div")
-    .data(activities_by_category.slice(0, activities_by_category.length-1))
+    .data(activities_by_category.slice(1, activities_by_category.length-1))
     .enter()
       .append("div");
 
