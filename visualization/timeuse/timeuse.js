@@ -356,7 +356,12 @@ function initialize_searchbox() {
       input.node().value = "";
     } else {
       selected_activity = suggestions_box.select(".selected").data()[0];
-      input.node().value = selected_activity["category"] != null ? selected_activity["category"] : selected_activity["activity"];
+      var input_text;
+      if (selected_activity["category"] != null)
+        input_text = selected_activity["category"] != "All Activities" ? selected_activity["category"] : "";
+      else 
+        input_text = selected_activity["activity"];
+      input.node().value = input_text;
     }
 
     is_activity_match = selected_activity["is_match"];
