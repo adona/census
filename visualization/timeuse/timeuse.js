@@ -286,23 +286,36 @@ function initialize_searchbox() {
     suggestions_box.selectAll("*").remove();
     idx_selected = null;
 
-    var category_divs = suggestions_box.selectAll("div")
+    var category_containers = suggestions_box.selectAll("div")
       .data(filtered_activities_by_category)
       .enter()
         .append("div");
 
-    category_divs
+    var category_divs = category_containers
       .append("li")
-      .attr("class", "suggestion-category")
-      .text(category => category["category"] + " [" + category["n_filtered_persons"] + "]");
-    
+        .attr("class", "suggestion-category")
     category_divs
+      .append("span")
+        .text(category => category["category"]);
+    category_divs
+      .append("span")
+        .attr("class", "match-count")
+        .text(category => " [" + category["n_filtered_persons"] + "]");
+      
+    var activity_divs = category_containers
       .selectAll(".suggestion-activity")
       .data(category => category["activities"])
       .enter()
         .append("li")
-        .attr("class", "suggestion-activity")
-        .text(activity => activity["activity"] + " [" + activity["n_filtered_persons"] + "]");
+        .attr("class", "suggestion-activity");
+    activity_divs
+      .append("span")
+        .text(activity => activity["activity"]);
+    activity_divs
+      .append("span")
+        .attr("class", "match-count")
+        .text(activity => " [" + activity["n_filtered_persons"] + "]");
+    
 
     suggestions_box
       .selectAll("li")

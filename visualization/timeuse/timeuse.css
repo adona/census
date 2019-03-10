@@ -220,6 +220,11 @@ body {
   font-size: 12px;
 }
 
+.suggestions-box .match-count {
+  font-size: 10px;
+  color: grey;
+}
+
 .suggestions-box li.selected {
   background: #F5F5F5;
   border: solid var(--filter-checked-color) 1px;
