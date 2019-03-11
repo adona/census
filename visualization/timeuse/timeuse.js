@@ -704,8 +704,9 @@ function add_detailed_profile(person, timeline_container) {
   $(profile_card.node()).append(template.childNodes);
 
   // Fill in the information
+  var img_name = "user.png";
   profile_card.select(".icon")
-    .attr("src", "img/"+person["SEX"]+".png")
+    .attr("src", "img/"+img_name)
     .attr("alt", "Female default profile image icon");
 
   var simple_fields = ["AGE", "SEX", "RACE", "DAY", "MARST", "EDUC", "FAMINCOME"];
