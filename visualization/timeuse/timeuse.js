@@ -380,18 +380,23 @@ function initialize_searchbox() {
 }
 
 function initialize_legend() {
-  var show_legend = d3.select("#show-legend");
   var id = "legend";
-  var parent_div = show_legend;
-  var position = { left: 30 };
+  var parent_div = d3.select("#legend-text");
+  var position = { left: $(parent_div.node()).width() + 18 };
   var arrow_direction = "left";
   var legend_tooltip = create_tooltip(id, parent_div, position, arrow_direction);
   var legend = legend_tooltip.select(".tooltip-body");
-  
-  var category_divs = legend.selectAll("div")
+
+  legend
+    .append("div")
+    .attr("id", "legend-title")
+    .text("Legend");
+
+  var category_divs = legend.selectAll(".legend-category")
     .data(activities_by_category.slice(1, activities_by_category.length-1))
     .enter()
-      .append("div");
+      .append("div")
+      .attr("class", "legend-category");
 
   category_divs
     .append("div")
@@ -403,20 +408,32 @@ function initialize_legend() {
       .attr("class", "legend-description")
       .text(category => category["category"]);
   
-  var tooltip_top = -$(legend_tooltip.node()).height()/2;
+  legend
+    .append("div")
+    .attr("id", "legend-close")
+    .text("✖");
+
+  var tooltip_top = -0.9*$(legend_tooltip.node()).height();
   legend_tooltip
     .attr("style", legend_tooltip.attr("style") + " top: " + tooltip_top + "px;");
+  legend_tooltip.select(".tooltip-arrow")
+    .attr("style", "top: " + (-tooltip_top) + "px; ");
   
-  legend_tooltip.remove();
-  show_legend
-    .on("mouseover", function() {
-      $(show_legend.node()).append(legend_tooltip.node());
-    })
-    .on("mouseout", function() {
-      legend_tooltip.remove();
-    })
-
-
+  legend_tooltip.style("visibility", "hidden");
+  var visible = false;
+  d3.select("#show-legend")
+    .on("click", function() {
+      if (!visible)
+        legend_tooltip.style("visibility", "visible");
+      else
+        legend_tooltip.style("visibility", "hidden");
+      visible = ! visible;
+    });
+  d3.select("#legend-close")
+    .on("click", function() {
+      legend_tooltip.style("visibility", "hidden");
+      visible = false;
+    });
 }
 
 function preprocess_data() {
@@ -674,7 +691,7 @@ function add_detailed_profile(person, timeline_container) {
   // Create the tooltip
   var id = "person-profile-"  + person["ID"];
   var parent_div = timeline_container.select(".annotations");
-  var position = { "left": $(parent_div.node()).width() + 10 }; // Will set top once I know the height of the tooltip
+  var position = { "left": $(parent_div.node()).width() + 15 }; // Will set top once I know the height of the tooltip
   var arrow_direction = "left";
   var profile_tooltip = create_tooltip(id, parent_div, position, arrow_direction);
   profile_tooltip.classed("profile-tooltip", true);

@@ -76,6 +76,7 @@ body {
 /* Legend */
 
 #legend-text {
+  position: relative;
   text-align: right;
   font-size: 12px;
 }
@@ -88,12 +89,22 @@ body {
   border-radius: 7px;
 }
 
+#show-legend:hover {
+  cursor: pointer;
+}
+
 #legend {
-  width: 185px;
+  width: 275px;
 }
 
 #legend .tooltip-body {
   text-align: left;
+  padding: 15px;
+}
+
+#legend #legend-title {
+  font-size: 16px;
+  margin-bottom: 5px;
 }
 
 #legend .legend-color {
@@ -101,13 +112,28 @@ body {
   vertical-align: middle;
   width: 30px;
   height: 15px;
-  margin: 4px 15px 4px 5px;
+  margin: 4px 15px 4px 15px;
 }
 
 #legend .legend-description {
   display: inline-block;
   vertical-align: middle;
 }
+
+#legend-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 5px;
+  font-size: 13px;
+  color: rgba(0,0,0,.4);
+  user-select: none;
+}
+
+#legend-close:hover {
+  cursor: pointer;
+}
+
 
 /* Filters */
 
