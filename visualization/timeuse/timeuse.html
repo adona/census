@@ -8,8 +8,8 @@
   <link rel="stylesheet" href="timeuse.css">
 </head>
 <body>
-  <div id="main">
-    <div id="header">
+  <div id="header">
+    <div id="header-content">
       <div id="title"><h1>A day in the life</h1></div>
       <div id="description">
         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
@@ -21,20 +21,18 @@
         <div id="legend-text">Legend <div id="show-legend">?</div></div>
       </div>
     </div>
-    <div id="timelines-list">
-      <!-- Timeline template -->
-      <div class="timeline-container">
-        <div class="annotations">
-          <div class="summary">
-              <div class="demographics"></div>
-              <div class="day"></div>    
-          </div>
-        </div>
-        <svg class="timeline"></svg>
-      </div>
-    </div>
   </div>
-  <div id="sidebar">
+  <div id="timelines-list">
+    <!-- Timeline template -->
+    <div class="timeline-container">
+      <div class="annotations">
+        <div class="profile-summary">
+          <div class="demographics"></div>
+          <div class="day"></div>    
+        </div>
+      </div>
+      <svg class="timeline"></svg>
+    </div>
     <!-- Person profile template -->
     <div class="profile-card" style="display: none;">
       <div class="header">
@@ -75,10 +73,9 @@
             <span class="description-detail">(last year)</span>
           </div>
           <div class="FAMINCOME value"></div>
-        </div>        
+        </div>
       </div>
     </div>
-  </div>
   <script src="timeuse.js"></script>
 </body>
 </html>

@@ -105,7 +105,7 @@ $.getJSON(url_activities)
         preprocess_data();
 
         d3.select("#loading-data").remove();
-        d3.select("#header").node().appendChild(RESULTS_AND_LEGEND_DIV);
+        d3.select("#header-content").node().appendChild(RESULTS_AND_LEGEND_DIV);
         initialize_legend();
   
         filter_persons();
@@ -155,7 +155,7 @@ function initialize_header() {
 
   // Add top-margin to main-area = height of the fixed header, so they don't overlap
   var header_height = $("#header").height();
-  d3.select("#timelines-list").attr("style", "margin-top: "+ (header_height) + "px;");
+  d3.select("#timelines-list").attr("style", "margin-top: "+ (header_height+5) + "px;");
 }
 
 function initialize_filters() {
@@ -673,8 +673,8 @@ function add_detailed_profile(person, timeline_container) {
 
   // Create the tooltip
   var id = "person-profile-"  + person["ID"];
-  var parent_div = d3.select("#sidebar");
-  var position = { "left": 10 }; // Will set top once I know the height of the tooltip
+  var parent_div = timeline_container.select(".annotations");
+  var position = { "left": $(parent_div.node()).width() + 10 }; // Will set top once I know the height of the tooltip
   var arrow_direction = "left";
   var profile_tooltip = create_tooltip(id, parent_div, position, arrow_direction);
   profile_tooltip.classed("profile-tooltip", true);
@@ -702,12 +702,12 @@ function add_detailed_profile(person, timeline_container) {
   // the arrow always points to the center of the timeline, 
   // but the tooltip body relative to the arrow is dependent on where the timeline is on the page.
   var tooltip_height = $(profile_tooltip.node()).height();
-  var timeline_center_relative_document = $(timeline_container.node()).offset().top 
-    + $(timeline_container.node()).height() - 32;
-  var timeline_center_relative_window = timeline_center_relative_document - $(window).scrollTop();
-  var timeline_center_relative_window_as_percentage = timeline_center_relative_window/$(window).height();
+  var timeline_center = $(timeline_container.node()).height() - 32;
+  var timeline_center_relative_document = $(timeline_container.node()).offset().top + timeline_center;
+  var timeline_center_relative_window = timeline_center_relative_document - ($(window).scrollTop() + $("#header").height());
+  var timeline_center_relative_window_as_percentage = timeline_center_relative_window/($(window).height() - $("#header").height());
   var arrow_top = 5 + timeline_center_relative_window_as_percentage*(tooltip_height-25);
-  var tooltip_top = timeline_center_relative_document - arrow_top - 5;
+  var tooltip_top = timeline_center - arrow_top - 5;
   profile_tooltip
     .attr("style", profile_tooltip.attr("style") + "top: " + tooltip_top + "px; ");
   profile_tooltip.select(".tooltip-arrow")

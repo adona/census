@@ -2,9 +2,9 @@
   box-sizing: border-box;
 
   /* CSS variables */
-  --body-width: 950px;
-  --main-width: 690px;
-  --sidebar-width: 250px;
+  --body-width: 1000px;
+  --timelines-width: 690px;
+  --sidebar-width: 300px;
   --timeline-container-height: 70px;
   --filter-checked-color: #247BA0;
 }
@@ -21,29 +21,19 @@ body {
   font-family: Helvetica;
 }
 
-#main {
-  display: inline-block;
-  vertical-align: top;
-  width: var(--main-width);
-}
-
-#sidebar {
-  display: inline-block;
-  position: relative;
-  vertical-align: top;
-  width: var(--sidebar-width);
-  background: red;
-}
-
-
 /* Header */
 
 #header {
   position: fixed;
+  z-index: 2;
   top: 0;
-  width: var(--main-width);
+  width: var(--body-width);
   background: white;
-  z-index: 1;
+}
+
+#header-content {
+  position: relative;
+  width: var(--timelines-width);
 }
 
 #title {
@@ -74,7 +64,7 @@ body {
 }
 
 #loading-data, #n-results {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   font-size: 16px;
 }
 
@@ -207,7 +197,6 @@ body {
   padding: 0;
   list-style: none;
   background: white;
-  z-index: 2;
 }
 
 .suggestion-category {
@@ -231,8 +220,13 @@ body {
   color: var(--filter-checked-color);
 }
 
-
 /* Timelines */
+
+#timelines-list {
+  position: relative;
+  z-index: 1;
+  width: var(--timelines-width);
+}
 
 .timeline-container {
   position: relative;
@@ -244,14 +238,14 @@ body {
   font-size: 12px;
 }
 
-.timeline-container .demographics {
+.timeline-container .profile-summary .demographics {
   position: absolute;
   top: 15px;
   left: 0px;
   padding-right: 10px;
 }
 
-.timeline-container .day {
+.timeline-container .profile-summary .day {
   position: absolute;
   top: 15px;
   right: 0px;
