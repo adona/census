@@ -647,8 +647,9 @@ function add_activity_description(person, activity, timeline_container, time_sca
 
   // Set color to match activity
   var color = HAS_LIGHT_ACTIVITY_COLOR.includes(activity["CATEGORY"]) ? "black" : "white";
+  var border = activity["CATEGORY"] == "Missing data" ? "border: solid lightgrey 1px; " : "border-width: 0px; ";
   var style = "background: " + ACTIVITY_COLORS[activity["CATEGORY"]] + "; " + 
-    "color: " + color + "; border-width: 0px; ";
+    "color: " + color + "; " + border;
   var text = activity["ACTIVITY3"];
   tooltip.select(".tooltip-body")
     .attr("style", style)
