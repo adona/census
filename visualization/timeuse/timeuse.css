@@ -87,6 +87,7 @@ body {
   background: #EFEFEF;
   padding: 0px 3px;
   border-radius: 7px;
+  user-select: none;
 }
 
 #show-legend:hover {
