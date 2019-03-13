@@ -34,6 +34,7 @@ body {
 #header-content {
   position: relative;
   width: var(--timelines-width);
+  text-align: left;
 }
 
 #title {
@@ -42,10 +43,16 @@ body {
 
 #title h1 {
   margin: 0px;
-	text-align: left;
   font-size: 42px;
   font-family: Georgia;
 }
+
+#byline {
+  margin-bottom: 15px;
+	font-size: 14px;
+	font-style: italic;
+}
+
 
 #description {
 	margin-bottom: 15px;
@@ -53,7 +60,6 @@ body {
 
 #description p {
   margin: 0px;
-  text-align: left;
 	line-height: 20px;
 	font-size: 14px;
 }
