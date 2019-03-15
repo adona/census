@@ -157,9 +157,9 @@ def load_csv(filepath):
 ###
 
 filepath_in = DATADIR + "raw/atus16.json"
-filepath_dictionary = DATADIR + "dictionaries/atus16_dictionary2.json"
-filepath_activity_map = DATADIR + "dictionaries/activities_map3.csv"
-filepath_activities_by_category = DATADIR + "dictionaries/activities_by_category3.json"
+filepath_dictionary = DATADIR + "dictionaries/atus16_dictionary.json"
+filepath_activity_map = DATADIR + "dictionaries/activities_map.csv"
+filepath_activities_by_category = DATADIR + "dictionaries/activities_by_category.json"
 
 households = load_JSON(filepath_in)
 data_dictionary = load_JSON(filepath_dictionary)

@@ -88,8 +88,8 @@ var persons, activities_by_category,
   filtered_persons, npersons_visible,
   activity_dropdown_is_visible = false;
 
-var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category.json"
-var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16.json.gz";
+var url_activities = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_activities_by_category_final.json"
+var url_data = "https://storage.googleapis.com/iron-flash-216615-dev/atus16_final.json.gz";
 
 $.getJSON(url_activities)
   .done(function(d) {
