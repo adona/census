@@ -74,7 +74,7 @@ const ACTIVITY_COLORS = { // See most colors here: https://coolors.co/0d2c54-693
   "Work": "#0D2C54", // Dark Blue
   "Education": "#69306D", // Purple
   "Caring for Others": "#70C1B3", // Green
-  "Eating & drinking": "#F77046", // Orange
+  "Eating & Drinking": "#F77046", // Orange
   "Leisure": "#FFB400", // Bright Yellow
   "Travel": "#999999", // Medium-grey
   "Missing data": "#FFFFFF" // White
